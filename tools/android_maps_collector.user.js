@@ -383,7 +383,18 @@
     });
     const target = exact || countButton || samePlaceLink;
     if (!target) {
-      const hints = candidates.map(labelOf).filter(label => /\breviews?\b/i.test(label)).slice(0, 8);
+      const showDetails = candidates.find(node =>
+        node.matches('button,[role="button"]') &&
+        /^show details$/i.test(labelOf(node))
+      );
+      if (showDetails) {
+        try {
+          showDetails.click();
+          lastReviewsControlDiagnostic = "Expanded the Google Maps business details; checking again for Reviews.";
+          return true;
+        } catch (_) {}
+      }
+      const hints = candidates.map(labelOf).filter(label => /\\breviews?\\b/i.test(label)).slice(0, 8);
       lastReviewsControlDiagnostic = "Visible review-related controls: " +
         (hints.join(" | ") || "none") + ". Visible buttons: " +
         candidates.filter(node => node.matches('button,[role="tab"],[role="button"]'))
@@ -426,6 +437,8 @@
         foundCards = true;
         break;
       }
+      // Re-check after expanding compact mobile Maps details.
+      if (attempt > 0 && attempt % 4 === 0) clickReviewsTab();
       if (attempt === 11 || attempt === 29 || attempt === 59) {
         status("Identity verified. Waiting for Google Reviews to finish loading… " + ((attempt + 1) / 2) + " seconds elapsed.");
       }
