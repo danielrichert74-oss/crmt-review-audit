@@ -55,3 +55,25 @@ records only in a downstream derived file; do not destroy the original capture.
 
 Do not submit this output as a comprehensive audit until a separate verifier
 reconciles the count and independently spot-checks source records.
+
+
+## Identity verification and one-star derivation
+
+The Greenville run requires all of these visible-page checks before it opens
+Reviews: profile title contains CAR-MART and Greenville; page text contains
+the expected address tokens; and the expected phone digits are present.
+The default expected values are the Greenville address and 903-458-9900.
+Override them only when deliberately testing another independently verified
+dealership.
+
+After the raw capture, derive a one-star working file without changing the raw
+evidence:
+
+```bash
+python tools/filter_one_star.py --input output/local-browser-capture.jsonl
+```
+
+This creates a one-star JSONL file, CSV export, and derivation manifest.
+Unknown ratings and malformed input lines are counted separately. The derived
+manifest remains explicitly incomplete because a filter cannot prove that
+Google exposed every historical review.
