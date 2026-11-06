@@ -273,7 +273,7 @@ def main():
         # collection evidence. A separate processor filters 1-star records.
         with out.open("w", encoding="utf-8") as handle:
             for item in captured.values():
-                handle.write(json.dumps(item, ensure_ascii=False) + "\\n")
+                handle.write(json.dumps(item, ensure_ascii=False) + "\n")
 
         manifest = {
             "started_at_utc": run_started, "finished_at_utc": now(),
