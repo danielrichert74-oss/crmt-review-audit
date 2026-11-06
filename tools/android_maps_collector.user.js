@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.3.0
+// @version      0.4.0
 // @description  Persistent, configurable capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -54,6 +54,7 @@
   let autoStartedAt = null;
   let autoFinishedAt = null;
   let autoStopReason = "not-started";
+  let autoBundleExported = false;
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
@@ -292,11 +293,13 @@
   }
 
   function stopAuto(message) {
+    const wasRunning = Boolean(autoTimer && autoStartedAt);
     if (autoTimer) clearInterval(autoTimer);
     autoTimer = null;
     autoFinishedAt = new Date().toISOString();
     autoStopReason = message || "stopped-by-user";
     status(message || ("Auto-collect stopped. " + cards.size + " unique reviews captured."));
+    if (wasRunning && !autoBundleExported) exportAuditBundle();
   }
 
   function restoreVerifiedListing(identity) {
@@ -380,6 +383,7 @@
     autoStartedAt = new Date().toISOString();
     autoFinishedAt = null;
     autoStopReason = "running";
+    autoBundleExported = false;
     status("AUTO-COLLECT running. Keep this tab open; do not navigate away.");
     autoTimer = setInterval(() => {
       if (!armed || !document.body.contains(feed)) return stopAuto("Stopped: review feed or capture state changed.");
@@ -412,6 +416,50 @@
     a.download = filename;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function exportAuditBundle() {
+    persistCards();
+    const rows = [...cards.values()];
+    const oneStar = rows.filter(row => row.rating_value === 1);
+    const bundle = {
+      schema_version: "crmt-review-audit-bundle-1.0",
+      generated_at_utc: new Date().toISOString(),
+      listing: {
+        title: verifiedIdentity?.title || "",
+        url_at_verification: verifiedIdentity?.listing_url_at_verification || "",
+        url_at_export: location.href,
+        identity_checks: verifiedIdentity
+      },
+      collection: {
+        collector: "crmt-android-userscript-0.4.0",
+        mode: captureMode || "not-armed",
+        sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
+        sort_verification_method: sortVerificationMethod,
+        started_at_utc: autoStartedAt,
+        finished_at_utc: autoFinishedAt,
+        stop_reason: autoStopReason,
+        scroll_cycles: autoSteps,
+        complete: false,
+        completeness_note: "Visible Google Maps UI capture. Feed exhaustion and count matching do not prove complete historical coverage."
+      },
+      counts: {
+        raw_unique_reviews: rows.length,
+        one_star_reviews: oneStar.length,
+        non_one_star_reviews: rows.filter(row => row.rating_value !== null && row.rating_value !== 1).length,
+        unknown_rating_reviews: rows.filter(row => row.rating_value === null).length,
+        missing_review_id: rows.filter(row => !row.review_id).length,
+        missing_reviewer: rows.filter(row => !row.reviewer_name).length,
+        missing_date: rows.filter(row => !row.published_at).length,
+        missing_text: rows.filter(row => !row.review_text).length
+      },
+      raw_reviews: rows,
+      one_star_reviews: oneStar
+    };
+    download("crmt-audit-bundle-" + Date.now() + ".json", JSON.stringify(bundle, null, 2), "application/json");
+    autoBundleExported = true;
+    status("AUTO-COLLECT finished. Evidence bundle downloaded: " + rows.length +
+      " total reviews, " + oneStar.length + " one-star. Completeness remains unverified.");
   }
 
   function exportRaw() {
