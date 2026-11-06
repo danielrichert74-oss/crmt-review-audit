@@ -574,7 +574,7 @@
     const fields = [
       "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
       "rating_label", "rating_value", "published_at", "review_text",
-      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text"
+      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text", "potential_duplicate_signature", "deduplication_basis"
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
