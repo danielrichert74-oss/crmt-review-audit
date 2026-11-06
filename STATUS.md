@@ -182,3 +182,12 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 - Extended the offline bundle processor to summarize the Android scroll trace in the audit manifest: valid trace cycles, reported new-card counts, cycles with new cards, maximum observed scroll position/height, and bottom-state observations.
 - Added a fixture test for this summary and confirmed the permanent incomplete flag remains false in the test assertion. The test has been committed but has not yet been executed in a real Python checkout in this environment.
+
+
+## Product naming and handoff — 2026-11-06
+
+- Adopted **Review Audit Tool** as the product name.
+- Android userscript metadata, visible panel title, and evidence collector identifier now use Review Audit Tool v0.7.0.
+- README and Android deployment guide updated for the product name and v0.7.0 scroll-trace capability.
+- Added `HANDOFF.md` with current architecture, exact latest commits, verification boundaries, $0 constraints, deployment gates, and a resume checklist to prevent repeated experiments after a session interruption.
+- No live browser/device qualification is claimed. The product remains in pilot engineering until real Android capture and reconciliation pass.
