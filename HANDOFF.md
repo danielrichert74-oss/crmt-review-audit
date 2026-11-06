@@ -11,7 +11,7 @@ Qualification pilot: Car-Mart of Greenville, Texas.
 This tool collects and analyzes public review evidence; review allegations are not independently verified facts and do not alone prove corporate liability.
 
 ## Current components
-- Android collector: `tools/android_maps_collector.user.js`, v0.7.0.
+- Android collector: `tools/android_maps_collector.user.js`, v0.7.1.
 - Processor: `tools/process_android_bundle.py`.
 - Existing filter: `tools/filter_one_star.py`.
 - Android guide: `ANDROID_PILOT.md`.
@@ -41,16 +41,23 @@ This tool collects and analyzes public review evidence; review allegations are n
 - `fd26678f01c5d5123279d8b0699e6d37c04b49fc` — product naming/handoff status entry.
 - `4d06c4dee822c287e681d94fccad062377ea8bb6` — persistent revision notes created.
 
+## QA branch changes — 2026-11-06
+- Branch: `qa-hardening-2026-11-06`.
+- Fixed a blocking JavaScript syntax defect: `runUnsortedAudit` contained `await` but was not declared `async`. Both automatic and manual startup paths now catch startup rejections and fail safely.
+- Runtime banner and evidence collector identifier now consistently report v0.7.1.
+- Processor rejects boolean star ratings, reports a five-star/unknown distribution, and flags declared-vs-valid trace-count mismatches and supplied-subset disagreement.
+- Added source regression checks for async declaration, version alignment, and both guarded startup paths, plus processor fixtures for boolean ratings and trace integrity.
+
 ## Verification — precise status
-- Latest userscript passed JavaScript syntax parsing after trace changes.
+- A source review found and fixed a blocking async syntax defect that earlier static checks had missed. Do not rely on the older syntax-pass statement as validation of v0.7.0.
 - Nine targeted static checks passed for trace fields, export, bounded length, and incomplete flag.
 - Prior broader v0.6.0 static acceptance set passed 15/15 before trace addition.
-- Earlier processor fixture tests passed in an isolated reconstructed harness; the newly added trace-summary test has not yet been executed in a full checkout.
+- New QA branch tests have not yet been executed in a full checkout. No test-run result is claimed.
 - **No live Google Maps DOM test or live Firefox Android collection has passed.** Selectors, identity gate, feed choice, traversal, extraction, download, and persistence need live qualification.
 - Never claim deployment-ready, complete historical coverage, or systemic findings until a real run, repeatability, reconciliation, and source spot-check gates pass.
 
 ## Resume plan — do not repeat completed work
-1. Fetch current repository HEAD and relevant files before editing.
+1. Run the full Python unittest suite in a local checkout, including `tests/test_android_userscript_source.py` and `tests/test_process_android_bundle.py`; use a local Python installation only (no hosted workflows).
 2. Do not recreate retired hosted Gosom/Stophy experiments or workflows; they failed qualification and violated the $0 guardrail.
 3. Review v0.7.0 for deterministic defects: identity continuity, auto-start, feed selection, scroll trace, extraction, localStorage, duplicate-key collisions, bundle export.
 4. Add useful offline tests only; do not create fake-DOM tests that could be mistaken for a live Google Maps qualification.
