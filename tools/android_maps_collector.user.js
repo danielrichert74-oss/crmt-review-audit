@@ -386,7 +386,7 @@
     if (!target) {
       const showDetails = candidates.find(node =>
         node.matches('button,[role="button"]') &&
-        /^show details(?:\\s+.*)?$/i.test(labelOf(node))
+        /^show details(?:\s+.*)?$/i.test(labelOf(node))
       );
       if (showDetails) {
         try {
@@ -395,7 +395,7 @@
           return true;
         } catch (_) {}
       }
-      const hints = candidates.map(labelOf).filter(label => /\\breviews?\\b/i.test(label)).slice(0, 8);
+      const hints = candidates.map(labelOf).filter(label => /\breviews?\b/i.test(label)).slice(0, 8);
       lastReviewsControlDiagnostic = "Visible review-related controls: " +
         (hints.join(" | ") || "none") + ". Visible buttons: " +
         candidates.filter(node => node.matches('button,[role="tab"],[role="button"]'))
