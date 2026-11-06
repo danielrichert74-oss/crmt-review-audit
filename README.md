@@ -4,7 +4,7 @@ A zero-cost-first, evidence-preserving project to audit public Google Maps revie
 
 ## Current status
 
-The first hosted Gosom scraper experiment failed qualification: it captured only 1 one-star review against a point-in-time Google listing benchmark of 69. That output is not a comprehensive audit dataset.
+The first hosted Gosom scraper experiment failed qualification: it captured only 1 one-star review against a point-in-time Google listing benchmark of 69. That output is not a comprehensive audit dataset. Both old hosted collection workflows have since been retired so the active project cannot accidentally invoke the metered Stophy API or consume hosted scraper compute.
 
 Two experimental local collectors now target the rendered Google Maps interface:
 - Desktop/laptop Playwright: `tools/local_maps_collector.py`
