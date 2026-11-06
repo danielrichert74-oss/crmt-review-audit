@@ -91,3 +91,7 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Added a title-continuity guard: if the visible business title changes or disappears after arming, capture disarms rather than risking cross-location contamination.
 - Added an explicit manual Lowest-sort confirmation path; the manifest labels it as user-confirmed rather than machine-detected.
 - Added unit tests for one-star derivation (deduplication, unknown ratings, malformed JSONL, and review-ID preference). Tests are committed but have not been executed in this environment.
+
+
+- Android extraction now also preserves the raw visible card text and includes a best-effort date fallback from the card's text when the dedicated date selector is absent. The one-star CSV includes that raw card text for review/quality control.
+- The business-continuity check was relaxed from exact heading equality to requiring the verified business name tokens remain visible somewhere in the current page/ARIA text; this accommodates the heading changing in the Reviews view while still disarming if the business identity disappears.
