@@ -191,3 +191,12 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - README and Android deployment guide updated for the product name and v0.7.0 scroll-trace capability.
 - Added `HANDOFF.md` with current architecture, exact latest commits, verification boundaries, $0 constraints, deployment gates, and a resume checklist to prevent repeated experiments after a session interruption.
 - No live browser/device qualification is claimed. The product remains in pilot engineering until real Android capture and reconciliation pass.
+
+
+## QA hardening branch — 2026-11-06
+
+- Created branch `qa-hardening-2026-11-06` for a focused processor/collector maintenance pass.
+- Processor now rejects boolean values as star ratings (Python treats `True` as integer 1), emits a 1–5 plus unknown rating distribution, and flags mismatches between the declared trace cycle count and valid trace records. It also flags disagreement between the collector-supplied one-star subset and independent raw-card derivation.
+- Added regression tests for boolean-rating rejection and trace-count mismatch warnings.
+- Aligned the userscript runtime startup label and evidence collector version to 0.7.1; removed the stale 0.6.0 startup message.
+- These changes are committed on the QA branch. They have not yet been executed in a Python test environment or live Firefox/Google Maps. Do not merge or label deployment-ready until test execution and the live Android deployment gates in HANDOFF.md pass.
