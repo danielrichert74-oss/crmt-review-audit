@@ -22,6 +22,8 @@
     if (savedConfig && Array.isArray(savedConfig.titleTokens) && savedConfig.address && savedConfig.phone) EXPECTED = savedConfig;
   } catch (_) {}
   const cards = new Map();
+  const nodeCaptureKeys = new WeakMap();
+  let fallbackCaptureSequence = 0;
   let storageKey = "crmt-review-capture-greenville-v1";
   let storageWarning = "";
   function persistCards() {
@@ -219,9 +221,29 @@
       card_text: cardText
     };
     const keyMaterial = [
-      row.reviewer_name, row.published_at, row.review_text, row.rating_label
+      row.reviewer_name, row.published_at, row.review_text, row.rating_label, row.rating_value
     ].join("|");
-    row.capture_key = row.review_id || hash(keyMaterial);
+    row.potential_duplicate_signature = hash(keyMaterial);
+    if (row.review_id) {
+      row.capture_key = "google-review-id:" + row.review_id;
+      row.deduplication_basis = "google-review-id";
+    } else {
+      // A DOM-node/signature key prevents repeated polling of the same rendered
+      // card from overwriting or duplicating it. Different DOM nodes with the
+      // same fingerprint are retained as separate observations and flagged.
+      let signatures = nodeCaptureKeys.get(el);
+      if (!signatures) {
+        signatures = new Map();
+        nodeCaptureKeys.set(el, signatures);
+      }
+      if (!signatures.has(row.potential_duplicate_signature)) {
+        fallbackCaptureSequence++;
+        signatures.set(row.potential_duplicate_signature,
+          "observed-card:" + row.potential_duplicate_signature + ":" + fallbackCaptureSequence);
+      }
+      row.capture_key = signatures.get(row.potential_duplicate_signature);
+      row.deduplication_basis = "dom-node-and-content-signature";
+    }
     return row;
   }
 
