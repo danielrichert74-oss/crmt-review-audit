@@ -118,3 +118,13 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - A direct Google Maps page could not be opened through the available web reader. The Android userscript has not been executed in a live browser or on the user's S23.
 - Remote browser-agent execution is metered. It was not used because the project's standing $0 constraint prohibits spending credits. No Actions workflow was launched.
 - Result: **static QA passed; live collector test remains blocked pending execution in Firefox Android on the target Google Maps listing.** Do not describe the collector as live-tested or qualified.
+
+
+## Android one-click unsorted collection — 2026-11-06
+
+- Updated the Android userscript to v0.4.0.
+- Added a single **RUN AUDIT (all reviews)** action: it verifies the current Greenville overview, attempts to open Reviews, waits for review cards, arms unsorted capture, and starts automatic feed traversal.
+- This is a deliberate workaround for the mobile Google Maps UI not exposing a usable Lowest control. The collector preserves all observed ratings and derives one-star rows afterward; the manifest does not claim a verified sort.
+- Added automatic single-file JSON bundle export after feed exhaustion or manual stop. The bundle includes raw cards, the derived one-star subset, identity evidence, collection timing, scroll cycles, stop reason, and missing-field counts.
+- Added a conservative Reviews-tab label matcher and verified JavaScript syntax parsing in an isolated V8 runtime.
+- Repository changes committed; no live Google Maps run was performed. The one-click path is therefore an improved candidate, not yet a qualified audit. The bundle must be reconciled and independently spot-checked before evidentiary use.
