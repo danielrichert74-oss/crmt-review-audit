@@ -249,10 +249,24 @@
     else if (action === "raw") exportRaw();
     else if (action === "one") exportOneStar();
     else if (action === "csv") exportCsv();
+    else if (action === "manifest") {
+      const rows = [...cards.values()];
+      const identity = identityCheck();
+      download("crmt-greenville-manifest-" + Date.now() + ".json",
+        JSON.stringify({
+          created_at_utc: new Date().toISOString(),
+          listing_title: identity.title, listing_url: location.href,
+          identity_checks: identity, lowest_selected_at_arm: true,
+          raw_cards_captured: rows.length,
+          one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
+          last_capture_at_utc: lastCapture, complete: false,
+          completeness_note: "User-controlled visible-card capture. No claim of complete historical coverage."
+        }, null, 2), "application/json");
+    }
   });
 
-  observer = new MutationObserver(() => {
-    if (armed) captureVisible();
+  observer = new MutationObserver(records => {
+    if (armed && records.some(record => !panel.contains(record.target))) captureVisible();
   });
   observer.observe(document.body, { childList: true, subtree: true });
   status("Open the Greenville business profile, Reviews, and Lowest. Then tap Verify & arm.");
