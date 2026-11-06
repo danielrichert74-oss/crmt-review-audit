@@ -14,8 +14,8 @@ class AndroidUserscriptSourceChecks(unittest.TestCase):
 
     def test_runtime_and_evidence_versions_match(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertRegex(source, r"// @version\s+0\.7\.1")
-        self.assertIn('review-audit-tool-android-0.7.1', source)
+        self.assertRegex(source, r"// @version\s+0\.7\.2")
+        self.assertIn('review-audit-tool-android-0.7.2', source)
         self.assertNotIn('Pilot 0.6.0 loaded', source)
 
 
