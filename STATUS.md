@@ -85,3 +85,9 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 
 - Added an explicit Android fallback for sort-state variation: **Verify & arm** requires a detected selected-state signal; **Confirm Lowest visually** is a separate user-attested path and is labeled as such in the exported manifest. This avoids silently treating a manual assertion as machine verification.
+
+
+- Android identity verification now occurs on the business overview before opening Reviews. This matters because current Google Maps extraction guidance reports that the review view may hide address/contact metadata. The verified identity and URL are retained in memory for the session.
+- Added a title-continuity guard: if the visible business title changes or disappears after arming, capture disarms rather than risking cross-location contamination.
+- Added an explicit manual Lowest-sort confirmation path; the manifest labels it as user-confirmed rather than machine-detected.
+- Added unit tests for one-star derivation (deduplication, unknown ratings, malformed JSONL, and review-ID preference). Tests are committed but have not been executed in this environment.
