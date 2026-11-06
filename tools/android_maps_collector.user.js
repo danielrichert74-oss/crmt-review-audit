@@ -18,6 +18,7 @@
   };
   const cards = new Map();
   let armed = false;
+  let verifiedIdentity = null;
   let sortVerificationMethod = null;
   let observer = null;
   let lastCapture = null;
@@ -45,8 +46,9 @@
     <div data-status style="margin:8px 0">Waiting for a Google Maps business profile.</div>
     <div data-count style="margin:6px 0">0 captured · 0 one-star</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <button data-action="verify">Verify & arm</button>
-      <button data-action="manual">Confirm Lowest visually</button>
+      <button data-action="identity">Verify business</button>
+      <button data-action="verify">Arm (Lowest detected)</button>
+      <button data-action="manual">Arm (Lowest confirmed visually)</button>
       <button data-action="capture">Capture visible</button>
       <button data-action="scroll">Scroll feed once</button>
       <button data-action="raw">Export raw JSONL</button>
@@ -231,32 +233,47 @@
       panel.innerHTML = '<button data-action="show" style="width:32px;height:32px">CR</button>';
     } else if (action === "show") {
       location.reload();
-    } else if (action === "verify") {
+    } else if (action === "identity") {
       const identity = identityCheck();
+      armed = false;
       if (!identity.ok) {
-        armed = false;
+        verifiedIdentity = null;
         status("IDENTITY FAIL — title:" + identity.titleOk +
           ", address:" + identity.addressOk + ", phone:" + identity.phoneOk +
-          ". Open the exact Greenville business profile.");
+          ". Verify the business on its overview page before opening Reviews.");
+      } else {
+        verifiedIdentity = {
+          ...identity,
+          verified_at_utc: new Date().toISOString(),
+          listing_url_at_verification: location.href
+        };
+        status("Business identity verified on overview: " + identity.title +
+          ". Now open Reviews and choose Lowest.");
+      }
+    } else if (action === "verify") {
+      const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
+      if (!verifiedIdentity || !hasReviewCards) {
+        armed = false;
+        status("First verify the business on its overview page, then open Reviews.");
       } else if (!lowestCheck()) {
         armed = false;
-        status("Identity matched (" + identity.title + "). Select Lowest in Reviews, then tap Verify & arm again.");
+        status("Business identity is verified. Select Lowest, then retry or use the visual confirmation button.");
       } else {
         armed = true;
         sortVerificationMethod = "dom-selected-state";
-        status("Armed for " + identity.title + ". Lowest sort state detected.");
+        status("Armed for " + verifiedIdentity.title + ". Lowest sort state detected.");
         captureVisible();
       }
     } else if (action === "manual") {
-      const identity = identityCheck();
       const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
-      if (!identity.ok || !hasReviewCards) {
+      if (!verifiedIdentity || !hasReviewCards) {
         armed = false;
-        status("Manual arm refused: verify the exact business profile and open Reviews first.");
+        status("Manual arm refused: verify the business overview first and open Reviews.");
       } else {
         armed = true;
         sortVerificationMethod = "user-visually-confirmed";
-        status("Manually armed. You confirmed Lowest is visibly selected. Capture and scroll carefully.");
+        status("Manually armed for " + verifiedIdentity.title +
+          ". You confirmed Lowest is visibly selected. Capture and scroll carefully.");
         captureVisible();
       }
     } else if (action === "capture") captureVisible();
@@ -266,11 +283,13 @@
     else if (action === "csv") exportCsv();
     else if (action === "manifest") {
       const rows = [...cards.values()];
-      const identity = identityCheck();
+      const identity = verifiedIdentity;
       download("crmt-greenville-manifest-" + Date.now() + ".json",
         JSON.stringify({
           created_at_utc: new Date().toISOString(),
-          listing_title: identity.title, listing_url: location.href,
+          listing_title: identity?.title || "",
+          listing_url_at_verification: identity?.listing_url_at_verification || "",
+          listing_url_at_export: location.href,
           identity_checks: identity,
           lowest_selected_at_arm: true,
           lowest_verification_method: sortVerificationMethod,
