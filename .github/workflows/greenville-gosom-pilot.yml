@@ -24,9 +24,12 @@ jobs:
           echo "Prepared exact input URL:"
           cat .tmp/greenville-url.txt
       - name: Run pinned open-source scraper
+        env:
+          DISABLE_TELEMETRY: "1"
         run: |
           docker pull gosom/google-maps-scraper:v1.18.1
           docker run --rm \
+            -e DISABLE_TELEMETRY=1 \
             -v "${GITHUB_WORKSPACE}:/work" \
             gosom/google-maps-scraper:v1.18.1 \
             -input /work/.tmp/greenville-url.txt \
@@ -37,9 +40,10 @@ jobs:
             -c 1 \
             -exit-on-inactivity 3m
       - name: Keep only verified Greenville one-star reviews
-        run: |
-          python src/process_gosom_output.py --raw output/raw-scraper-output.jsonl --output-dir output
-          rm -f output/raw-scraper-output.jsonl
+        run: python src/process_gosom_output.py --raw output/raw-scraper-output.jsonl --output-dir output
+      - name: Remove unfiltered scraper output
+        if: always()
+        run: rm -f output/raw-scraper-output.jsonl
       - name: Upload filtered audit output
         if: always()
         uses: actions/upload-artifact@v4
