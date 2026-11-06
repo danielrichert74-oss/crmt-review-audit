@@ -80,7 +80,7 @@
     "overflow:auto", "background:#101820", "color:#fff",
     "border:2px solid #6da9d2", "border-radius:12px",
     "padding:10px", "font:14px/1.35 system-ui,sans-serif",
-    "box-shadow:0 3px 18px #0008"
+    "box-shadow:0 3px 18px #0008", "pointer-events:auto", "touch-action:pan-y"
   ].join(";");
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
@@ -109,7 +109,7 @@
       User-controlled pilot. Use Lowest only when visibly selected; otherwise use Unsorted mode. Never claims complete history.
     </div>`;
   const styleButtons = () => panel.querySelectorAll("button").forEach(b => {
-    b.style.cssText = "min-height:38px;padding:6px;border:1px solid #9ab;border-radius:7px;background:#e8f0f6;color:#102030;font-weight:600";
+    b.style.cssText = "min-height:42px;padding:8px;border:1px solid #9ab;border-radius:7px;background:#e8f0f6;color:#102030;font-weight:600;pointer-events:auto;touch-action:manipulation;position:relative;z-index:1";
   });
   (document.body || document.documentElement).appendChild(panel);
   styleButtons();
@@ -372,15 +372,18 @@
       return;
     }
     let foundCards = false;
-    for (let attempt = 0; attempt < 24; attempt++) {
+    for (let attempt = 0; attempt < 90; attempt++) {
       if (document.querySelector("[data-review-id],.jftiEf")) {
         foundCards = true;
         break;
       }
+      if (attempt === 11 || attempt === 29 || attempt === 59) {
+        status("Identity verified. Waiting for Google Reviews to finish loading… " + ((attempt + 1) / 2) + " seconds elapsed.");
+      }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     if (!foundCards) {
-      status("Identity verified, but no review cards appeared within 12 seconds. No collection started.");
+      status("Identity verified, but Google did not expose review cards after 45 seconds. No collection started. Open the Reviews tab manually; then use Arm (Unsorted visible reviews) when cards appear.");
       return;
     }
     armed = true;
