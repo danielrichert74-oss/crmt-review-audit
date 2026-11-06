@@ -1,40 +1,48 @@
 # America's Car-Mart Review Audit
 
-A zero-cost-first, evidence-preserving collector for public Google Maps reviews of America's Car-Mart dealerships. Scope: Oklahoma, Missouri, Texas and Kentucky. Greenville, Texas is the pilot.
+A zero-cost-first, evidence-preserving project to audit public Google Maps reviews of America's Car-Mart dealerships. Initial scope: Oklahoma, Missouri, Texas and Kentucky. Greenville, Texas is the qualification pilot.
 
-## Current collection design
+## Current status
 
-The pilot uses the open-source, MIT-licensed [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper), not Stophy or TinyFish.
+The first hosted Gosom scraper experiment failed qualification: it captured only 1 one-star review against a point-in-time Google listing benchmark of 69. That output is not a comprehensive audit dataset.
 
-The official Car-Mart Greenville directory page supplies the dealership name, street address and phone number, plus a Google Maps directions link. Testing showed that the directions link resolves to an address-only Google Maps pin (not the dealership's business profile) and returns zero reviews. Therefore the collector uses the exact dealership name and official street address as a Google Maps search query, then verifies the returned business against its phone number or the matching business name plus street number and city.
+A separate experimental Playwright collector now operates the rendered Google Maps interface:
+- `tools/local_maps_collector.py`
+- `requirements-local.txt`
+- `LOCAL_BROWSER_PILOT.md`
 
-1. Read Greenville's official dealership details from `data/dealerships.csv`.
-2. Search Google Maps using only the exact dealership name, address and city/state.
-3. Request extended review extraction (upstream documents approximately 300 reviews per place).
-4. Verify the returned business before processing any review.
-5. Retain only records with a one-star rating. Non-one-star reviews are discarded from the audit outputs.
-6. Preserve review text, reviewer name/profile, date, review ID, listing URL, and owner response/date when present.
-7. Compare the captured one-star count with Google's per-rating count and mark completeness only when the counts match.
+This collector is **not yet live-tested**. It attempts to search for the exact dealership, open Reviews, select Lowest, scroll the visible review feed, and preserve raw review cards plus a trace manifest. It never declares completeness automatically. The next engineering gate is a live Greenville run that proves correct listing identity, successful Lowest sorting, real feed movement, accurate field extraction, and count reconciliation.
+
+## Collection and evidence principles
+
+1. Use the official America's Car-Mart location directory to establish each dealership's name, address and phone number.
+2. Search Google Maps using the exact dealership identity and verify the business profile before collecting.
+3. Select Google Reviews sorted by Lowest.
+4. Preserve raw captures before deriving the one-star dataset.
+5. Retain available review text, reviewer display name/profile, date, rating, review ID, listing URL, owner response and response date.
+6. Record collection time, collector version, listing identity, scroll trace, counts, duplicates, stop reason and limitations.
+7. Compare captured one-star records with a fresh Google per-rating benchmark and independently spot-check source records.
+8. Mark coverage complete only after a defensible reconciliation. A successful process exit, stalled feed, or matching count alone is not sufficient proof of historical completeness.
 
 ## $0 guardrails
 
-- The scraper is open-source and runs on a GitHub-hosted Actions runner.
-- No paid services, paid credits, card trials, or automatic top-ups.
-- No proxy purchase, paid API, or secret key is configured.
-- The workflow is manual / test-triggered only; it is not scheduled.
-- Raw mixed-rating scraper output is removed after filtering, including on failed runs. The uploaded artifact is intended to contain only one-star audit records and the manifest.
-- Upstream extraction is documented as up to approximately 300 reviews per place. If the captured one-star count does not match Google's per-rating count, the manifest marks coverage incomplete.
-- The upstream review schema does not currently expose an individual review permalink; review ID and reviewer profile URL are retained instead.
-- Do not use review aggregators. Treat allegations as allegations; collection does not independently verify them.
+- No paid APIs, subscriptions, credits, proxies, card trials, automatic top-ups, or billing-enabling upgrades.
+- Use free/open-source tools and free compute only where available.
+- If a proposed service has uncertain charges, do not use it.
+- Do not bypass sign-in, security controls, or access restrictions.
+- No review aggregators as substitutes for Google's source listing.
+- Treat review allegations as allegations; collection does not independently verify them.
 
-## Run
+## Greenville pilot
 
-Open the repository's **Actions** tab and select **Greenville pilot - gosom Google Maps scraper**. Run it manually. No secrets or paid services are required.
+The official Car-Mart Greenville directory page supplies the dealership identity and address. Its directions link was observed resolving to an address-only Google Maps pin, not the canonical business profile. The visible-browser pilot therefore searches by exact name and address rather than assuming the directions URL is the review listing.
 
-## Output
+See [LOCAL_BROWSER_PILOT.md](LOCAL_BROWSER_PILOT.md) for setup and the experimental run command. That path currently requires a desktop/laptop with Python and Chromium; it is not an Android-installable app.
 
-- `output/reviews.jsonl`: one record per verified one-star review
-- `output/reviews.csv`: tabular one-star records
-- `output/run_manifest.json`: listing identity, source counts, captured counts, completeness assessment and limitations
+## Outputs
 
-Do not claim comprehensive coverage until the manifest confirms the captured one-star count matches Google's per-rating listing count. Expand to other dealerships only after the Greenville pilot passes verification.
+The local pilot writes:
+- `output/local-browser-capture.jsonl`: raw visible review-card captures, including mixed ratings
+- `output/local-browser-capture.manifest.json`: listing identity, collection metadata, scroll trace, counts and limitations
+
+Do not submit these outputs as a comprehensive audit until the Greenville qualification gates pass. Expand to other dealerships only after the pilot is repeatable and independently verified.
