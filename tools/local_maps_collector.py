@@ -54,6 +54,9 @@ def extract_visible_cards(page):
         const ratingLabel = ratingNode ? (ratingNode.getAttribute('aria-label') || '') : '';
         const reviewText = txt('.wiI7pd') || txt('[data-expandable-section]');
         const response = el.querySelector('.CDe7pd, [class*="owner-response"], [class*="reply"]');
+        const responseDate = response
+          ? response.querySelector('[class*="date"], [class*="time"], [aria-label*="ago"]')
+          : null;
         const authorLink = el.querySelector('a[href*="/contrib/"]');
         return {
           review_id: el.getAttribute('data-review-id') || '',
@@ -63,6 +66,9 @@ def extract_visible_cards(page):
           published_at: txt('.rsqaWe') || txt('[class*="rsqaWe"]'),
           review_text: reviewText,
           owner_reply_text: response ? (response.innerText || response.textContent || '').trim() : '',
+          owner_reply_date: responseDate
+            ? (responseDate.getAttribute('aria-label') || responseDate.innerText || responseDate.textContent || '').trim()
+            : '',
           card_text: (el.innerText || '').trim()
         };
       });
@@ -222,6 +228,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--query", required=True, help="Exact dealership name and street address")
     ap.add_argument("--out", default="output/local-browser-capture.jsonl")
+    ap.add_argument("--expected-address", default="5107 Interstate Highway 30, Greenville, TX 75402")
+    ap.add_argument("--expected-phone", default="903-458-9900")
     ap.add_argument("--max-rounds", type=int, default=250)
     ap.add_argument("--headed", action="store_true", help="Show the browser window")
     ap.add_argument("--slow-mo", type=int, default=0)
@@ -262,7 +270,19 @@ def main():
         # The exact title check is a minimum identity gate, not full address
         # verification; the manifest preserves the title and URL for review.
         normalized_title = re.sub(r"[^a-z0-9]", "", listing_title.lower())
-        identity_verified = "carmart" in normalized_title and "greenville" in normalized_title
+        page_text = clean(page.locator("body").inner_text())
+        normalized_page_text = re.sub(r"[^a-z0-9]", "", page_text.lower())
+        address_tokens = [x for x in re.findall(r"[a-z0-9]+", args.expected_address.lower()) if len(x) > 1]
+        address_verified = bool(address_tokens) and all(
+            token in normalized_page_text for token in address_tokens
+        )
+        expected_phone_digits = re.sub(r"\\D", "", args.expected_phone)
+        page_phone_digits = re.sub(r"\\D", "", page_text)
+        phone_verified = bool(expected_phone_digits) and expected_phone_digits in page_phone_digits
+        identity_verified = (
+            "carmart" in normalized_title and "greenville" in normalized_title
+            and address_verified and phone_verified
+        )
         listing_url = page.url
 
         opened_reviews = choose_reviews(page) if identity_verified else False
@@ -270,7 +290,8 @@ def main():
         lowest_selected = bool(sort_check.get("verified"))
         if not identity_verified:
             print(
-                f"STOP: listing title did not verify as CAR-MART of Greenville: {listing_title!r}",
+                f"STOP: listing identity failed. title={listing_title!r}, "
+                f"address_verified={address_verified}, phone_verified={phone_verified}",
                 file=sys.stderr
             )
         elif not opened_reviews:
@@ -335,7 +356,11 @@ def main():
         manifest = {
             "started_at_utc": run_started, "finished_at_utc": now(),
             "query": args.query, "listing_title": listing_title,
-            "identity_verified_by_title": identity_verified,
+            "identity_verified_by_title": ("carmart" in normalized_title and "greenville" in normalized_title),
+            "identity_verified_by_address": address_verified,
+            "identity_verified_by_phone": phone_verified,
+            "expected_address": args.expected_address, "expected_phone": args.expected_phone,
+            "identity_verified": identity_verified,
             "listing_url": listing_url, "opened_reviews": opened_reviews,
             "selected_lowest": lowest_selected, "sort_verification": sort_check.get("evidence"),
             "scroll_container": scroll_meta,
