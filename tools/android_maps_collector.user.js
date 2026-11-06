@@ -4,6 +4,7 @@
 // @version      0.1.0
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
+// @match        https://maps.google.com/maps/*
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
