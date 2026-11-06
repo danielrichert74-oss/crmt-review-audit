@@ -22,26 +22,29 @@ class AndroidBundleProcessorTests(unittest.TestCase):
                 "raw_reviews": [
                     {"review_id": "r1", "rating_value": 1, "review_text": "one"},
                     {"review_id": "r1", "rating_value": 1, "review_text": "duplicate"},
+                    {"review_id": "r4", "rating_value": 1, "review_text": "one"},
                     {"review_id": "r2", "rating_value": 5, "review_text": "five"},
                     {"review_id": "r3", "rating_value": None, "review_text": "unknown"},
                 ],
                 "one_star_reviews": [
                     {"review_id": "r1", "rating_value": 1},
                     {"review_id": "r1", "rating_value": 1},
+                    {"review_id": "r4", "rating_value": 1},
                 ],
             }
             source.write_text(json.dumps(bundle), encoding="utf-8")
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(out),
-                 "--benchmark-one-star-count", "1"],
+                 "--benchmark-one-star-count", "2"],
                 check=True, capture_output=True, text=True,
             )
             manifest = json.loads(result.stdout)
             raw = [json.loads(line) for line in (out / "raw_reviews.jsonl").read_text().splitlines()]
             one = [json.loads(line) for line in (out / "one_star_reviews.jsonl").read_text().splitlines()]
-            self.assertEqual(len(raw), 4)
-            self.assertEqual(len(one), 2)
+            self.assertEqual(len(raw), 5)
+            self.assertEqual(len(one), 3)
             self.assertEqual(manifest["counts"]["potential_duplicate_one_star"], 1)
+            self.assertEqual(manifest["counts"]["one_star_unique_fingerprints"], 2)
             self.assertEqual(manifest["counts"]["one_star_records_preserved"], 2)
             self.assertEqual(manifest["counts"]["unknown_rating"], 1)
             self.assertTrue(manifest["benchmark_count_match"])
