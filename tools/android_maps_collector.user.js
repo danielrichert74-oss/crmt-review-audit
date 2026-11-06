@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.5.0
+// @version      0.6.0
 // @description  Persistent, configurable capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -55,6 +55,7 @@
   let autoFinishedAt = null;
   let autoStopReason = "not-started";
   let autoBundleExported = false;
+  let autoFeedInfo = null;
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
@@ -368,29 +369,63 @@
     autoCollect();
   }
 
+  function findReviewFeed(firstCard) {
+    const isScrollable = node => {
+      if (!node || node === document.body || node === document.documentElement) return false;
+      const css = getComputedStyle(node);
+      return /(auto|scroll)/.test(css.overflowY) &&
+        node.scrollHeight > node.clientHeight + 30;
+    };
+    const hasCards = node => Boolean(node.querySelector("[data-review-id],.jftiEf"));
+    const explicit = [...document.querySelectorAll('[role="feed"]')]
+      .filter(node => isScrollable(node) && hasCards(node));
+    if (explicit.length) {
+      explicit.sort((a, b) =>
+        b.querySelectorAll("[data-review-id],.jftiEf").length -
+        a.querySelectorAll("[data-review-id],.jftiEf").length);
+      const node = explicit[0];
+      return { node, method: "role-feed", candidates: explicit.length };
+    }
+
+    const candidates = new Set();
+    let ancestor = firstCard.parentElement;
+    while (ancestor && ancestor !== document.body && ancestor !== document.documentElement) {
+      if (isScrollable(ancestor) && hasCards(ancestor)) candidates.add(ancestor);
+      ancestor = ancestor.parentElement;
+    }
+    for (const node of document.querySelectorAll("div")) {
+      if (isScrollable(node) && hasCards(node)) candidates.add(node);
+    }
+    const ranked = [...candidates].map(node => ({
+      node,
+      cardCount: node.querySelectorAll("[data-review-id],.jftiEf").length,
+      scrollRange: node.scrollHeight - node.clientHeight,
+      area: node.clientHeight * node.clientWidth
+    })).sort((a, b) =>
+      (b.cardCount - a.cardCount) ||
+      (b.scrollRange - a.scrollRange) ||
+      (b.area - a.area)
+    );
+    return ranked.length
+      ? { node: ranked[0].node, method: "largest-review-containing-scroll-region", candidates: ranked.length }
+      : { node: null, method: "not-found", candidates: 0 };
+  }
+
   function autoCollect() {
     if (!armed) return status("Verify the dealership and arm a capture mode first.");
     if (autoTimer) return status("Auto-collect is already running.");
     const firstCard = document.querySelector("[data-review-id],.jftiEf");
     if (!firstCard) return status("No review cards found. Open the Reviews list first.");
-    let feed = firstCard.parentElement;
-    while (feed && feed !== document.body) {
-      const css = getComputedStyle(feed);
-      if (/(auto|scroll)/.test(css.overflowY) && feed.scrollHeight > feed.clientHeight + 30) break;
-      feed = feed.parentElement;
-    }
-    if (!feed || feed === document.body) feed = document.querySelector('[role="feed"]');
-    if (!feed) {
-      const candidates = [...document.querySelectorAll("div")].filter(node => {
-        if (!node.querySelector("[data-review-id],.jftiEf")) return false;
-        const css = getComputedStyle(node);
-        return /(auto|scroll)/.test(css.overflowY) &&
-          node.scrollHeight > node.clientHeight + 30;
-      });
-      candidates.sort((a, b) =>
-        (b.clientHeight * b.clientWidth) - (a.clientHeight * a.clientWidth));
-      feed = candidates[0] || null;
-    }
+    const feedResult = findReviewFeed(firstCard);
+    const feed = feedResult.node;
+    autoFeedInfo = {
+      method: feedResult.method,
+      candidate_count: feedResult.candidates,
+      role: feed?.getAttribute("role") || "",
+      class_name: typeof feed?.className === "string" ? feed.className : "",
+      initial_scroll_height: feed?.scrollHeight || 0,
+      initial_client_height: feed?.clientHeight || 0
+    };
     if (!feed) {
       autoStartedAt = new Date().toISOString();
       autoFinishedAt = new Date().toISOString();
@@ -453,7 +488,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "crmt-android-userscript-0.5.0",
+        collector: "crmt-android-userscript-0.6.0",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -461,6 +496,7 @@
         finished_at_utc: autoFinishedAt,
         stop_reason: autoStopReason,
         scroll_cycles: autoSteps,
+        feed_detection: autoFeedInfo,
         complete: false,
         completeness_note: "Visible Google Maps UI capture. Feed exhaustion and count matching do not prove complete historical coverage."
       },
@@ -648,7 +684,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Pilot 0.5.0 loaded. Waiting for the verified Greenville business profile.");
+  status("Pilot 0.6.0 loaded. Waiting for the verified Greenville business profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
