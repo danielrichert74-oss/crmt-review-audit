@@ -1,51 +1,35 @@
 # America's Car-Mart Review Audit
 
-A zero-cost-first, evidence-preserving collector for public Google Maps reviews of America's Car-Mart dealerships. The initial pilot is Greenville, Texas; planned states are Oklahoma, Missouri, Texas, and Kentucky.
+A zero-cost-first, evidence-preserving collector for public Google Maps reviews of America's Car-Mart dealerships. Scope: Oklahoma, Missouri, Texas and Kentucky. Greenville, Texas is the pilot.
 
-## Collection rules
+## Current pilot design
 
-- Use each dealership's official America's Car-Mart location page to establish the business and its Google Maps listing.
-- Query the listing's Google Maps Place ID through Stophy's public Google Maps Reviews API.
-- Request reviews sorted by `lowest`, then retain **only rating = 1** in the audit dataset.
-- Follow every returned cursor until pagination ends or an explicit limit/error occurs.
-- Preserve the raw API response, review text, author display name, publication date, review URL, owner response and response date, place ID, listing URL, page number, cursor status, and collection timestamp.
-- Do not use review aggregators.
-- Never describe a location as complete unless pagination ended normally and the run log records the number of pages and records.
-- Keep allegations as allegations; collection is not verification of the reviewer's claims.
+The GitHub Actions workflow automatically:
+1. Searches Google Maps through Stophy for America's Car-Mart in Greenville, TX.
+2. Matches the listing against the official dealership details (name/location and phone 903-458-9900).
+3. Stops without requesting reviews unless exactly one candidate matches.
+4. Requests the first reviews page sorted by lowest and locally retains only rating = 1.
+5. Saves review text, reviewer, date, review URL, owner reply/date, resolved listing details, and a run manifest as a GitHub Actions artifact.
 
-## Cost and safety
+No Place ID needs to be manually supplied. No TinyFish or Google API key is used.
+
+## $0 guardrails
 
 - No paid services, paid credits, card trials, or automatic top-ups.
-- Workflow is manual-dispatch only. It does not run on a schedule.
-- Stophy's first page can be requested without an API key according to its documentation. Later pages require a Stophy API key and consume the account's existing free credits. Never put a key in source code; add it only as the GitHub Actions secret `STOPHY_API_KEY`.
-- The workflow has a configurable page cap. Start with one page for the pilot. Increase only after reviewing the first-page output and confirming free credits are available.
-- Do not commit collected review data to the repository; the workflow uploads it as a private Actions artifact instead.
+- The workflow makes only the first-page keyless Stophy Maps Search call and first-page keyless Reviews call for the pilot. Both are documented as free within Stophy's no-key daily limit. It does not paginate.
+- Additional pages require a Stophy API key and consume credits. Do not add a key or increase page count without an explicit decision to do so.
+- The workflow is not scheduled. It can be run manually from GitHub Actions; a change to `data/run-pilot.txt` is also configured as a one-time push trigger.
+- Do not commit collected review data to the repository; output is uploaded as an Actions artifact.
+- Do not use review aggregators. Keep allegations as allegations; collection does not verify claims.
 
-## Pilot setup
+## Run
 
-1. Confirm the exact Greenville, TX America's Car-Mart location page and its Google Maps listing.
-2. Obtain the Google Maps Place ID from that listing (do not substitute a similarly named dealership).
-3. In GitHub Actions, run **Greenville pilot - Stophy reviews** manually with the Place ID, listing URL, and `max_pages=1`.
-4. Inspect the JSON/CSV and run log. Only then consider further pagination.
-5. Add `STOPHY_API_KEY` as a repository Actions secret only if the first page confirms the correct listing and additional pages are needed.
-
-## Local run
-
-Requires Python 3.11+ and `requests`.
-
-```bash
-python -m pip install requests
-export STOPHY_PLACE_ID="YOUR_VERIFIED_PLACE_ID"
-export STOPHY_LISTING_URL="YOUR_VERIFIED_GOOGLE_MAPS_URL"
-export STOPHY_MAX_PAGES=1
-python src/collect_reviews.py
-```
+Open the repository's **Actions** tab and select **Greenville pilot - Stophy reviews**. If GitHub asks to enable Actions, enable it, then run the workflow. No inputs or secrets are required for the first-page pilot.
 
 ## Output
 
-The collector writes:
-- `output/reviews.jsonl`: one JSON object per one-star review
+- `output/reviews.jsonl`: one record per one-star review
 - `output/reviews.csv`: tabular one-star records
-- `output/run_manifest.json`: page counts, errors, pagination status, and audit limitations
+- `output/run_manifest.json`: resolved listing, page counts, errors, pagination status and limitations
 
-A run that stops at a configured page cap is marked **incomplete** even if it returns reviews.
+A one-page run is explicitly incomplete if Stophy returns a cursor. Do not claim comprehensive coverage until all pages are collected and the manifest confirms pagination exhaustion.
