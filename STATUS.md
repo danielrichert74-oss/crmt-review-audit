@@ -50,3 +50,8 @@ No paid APIs, paid credits, subscriptions, proxies, card trials, or billing-enab
 - Fixed a JSONL serialization defect in the local collector: each captured review is now terminated by an actual newline, rather than the two-character literal sequence `\\n`.
 - Re-fetched the committed source and verified the corrected write statement is present.
 - These are repository/code inspections only. They do not constitute a Python runtime test or a live Google Maps test.
+
+
+- Added a fail-closed identity gate to the visible-browser collector: it will not open Reviews or collect cards unless the selected Google Maps profile title contains both CAR-MART and Greenville. The manifest records `identity_verified_by_title`.
+- This is a minimum title-based gate, not complete address/phone verification. It prevents an obvious wrong-profile scrape but does not replace manual identity review.
+- No live Google Maps run or Python runtime test was performed in this maintenance pass.
