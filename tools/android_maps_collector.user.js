@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.4
+// @version      0.7.5
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -218,7 +218,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.3",
+      collector: "review-audit-tool-android-0.7.5",
       card_text: cardText
     };
     const keyMaterial = [
@@ -347,19 +347,45 @@
   }
 
   function clickReviewsTab() {
-    // Never click broad links in search results: those can return to search
-    // instead of opening the selected dealership's review panel.
+    // Never activate review links from search results. On a verified place
+    // page, Maps may expose a tab, a rating/count button, or a same-place
+    // reviews link depending on viewport and experiment cohort.
     if (!isPlaceDetailPage()) return false;
-    const candidates = [...document.querySelectorAll('button,[role="tab"],[role="button"]')];
-    const target = candidates.find(node => {
-      const label = clean((node.getAttribute("aria-label") || "") + " " +
-        (node.innerText || node.textContent || ""));
-      const exact = /^reviews(?:\s+\(?\d[\d,]*\)?)?$/i.test(label);
+    const candidates = [...document.querySelectorAll(
+      'button,[role="tab"],[role="button"],a[href],[tabindex="0"]'
+    )].filter(node => {
       const rect = node.getBoundingClientRect();
-      return exact && rect.width > 0 && rect.height > 0 &&
-        !/write a review|review this place/i.test(label);
+      const css = getComputedStyle(node);
+      return rect.width > 0 && rect.height > 0 &&
+        css.visibility !== "hidden" && css.display !== "none";
     });
-    if (!target) return false;
+    const labelOf = node => clean((node.getAttribute("aria-label") || "") + " " +
+      (node.innerText || node.textContent || ""));
+    const safeLabel = label => /\breviews?\b/i.test(label) &&
+      !/write a review|review this place|review your visit|review guidelines/i.test(label);
+    const exact = candidates.find(node => {
+      const label = labelOf(node);
+      return /^reviews?(?:\s+\(?\d[\d,]*\)?)?$/i.test(label) &&
+        node.matches('button,[role="tab"],[role="button"]');
+    });
+    const countButton = candidates.find(node => {
+      const label = labelOf(node);
+      return safeLabel(label) && /\d/.test(label) &&
+        node.matches('button,[role="tab"],[role="button"]');
+    });
+    const samePlaceLink = candidates.find(node => {
+      const label = labelOf(node);
+      const href = node.getAttribute("href") || "";
+      return safeLabel(label) && /\/maps\/place\//i.test(href) &&
+        /reviews/i.test(href);
+    });
+    const target = exact || countButton || samePlaceLink;
+    if (!target) {
+      const hints = candidates.map(labelOf).filter(label => /\breviews?\b/i.test(label)).slice(0, 8);
+      status("No recognized Reviews control. Visible review-related controls: " +
+        (hints.join(" | ") || "none") + ". Place-page URL: " + location.pathname);
+      return false;
+    }
     try { target.click(); return true; } catch (_) { return false; }
   }
 
@@ -536,7 +562,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.3",
+        collector: "review-audit-tool-android-0.7.5",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -738,7 +764,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Review Audit Tool 0.7.3 loaded. Waiting for the verified dealership profile.");
+  status("Review Audit Tool 0.7.5 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
