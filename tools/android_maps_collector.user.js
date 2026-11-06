@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.3
+// @version      0.1.4
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -88,22 +88,31 @@
       .map(node => node.getAttribute("aria-label") || "").join(" ");
     const bodyText = document.body?.innerText || "";
     const bodyContent = document.body?.textContent || "";
+    const decodedUrl = (() => {
+      try { return decodeURIComponent(location.href); }
+      catch (_) { return location.href; }
+    })();
     const body = clean([bodyText, bodyContent, ariaText, documentTitle].join(" "));
+    const identityText = clean([body, decodedUrl].join(" "));
     const title = h1Title || documentTitle;
-    const titleSources = norm([h1Title, documentTitle, ariaText].join(" "))
+    const titleSources = norm([h1Title, documentTitle, ariaText, decodedUrl].join(" "))
       .replace(/[^a-z0-9]/g, "");
     const titleOk = EXPECTED.titleTokens.every(t => titleSources.includes(t));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
-    // Google Maps may display this verified address as "5107 I-30 Frontage Rd"
-    // rather than "5107 Interstate Highway 30". Keep all other identity checks strict.
+    const identityNormalized = norm(identityText).replace(/[^a-z0-9]/g, "");
+    // On mobile Maps, the address is encoded in the canonical /place/ URL
+    // rather than exposed in body text. Validate that URL plus the visible Call link.
     const addressCoreOk = ["5107", "greenville", "tx", "75402"]
-      .every(token => bodyNormalized.includes(token));
+      .every(token => identityNormalized.includes(token));
     const streetAliasOk =
-      bodyNormalized.includes("interstatehighway30") ||
-      bodyNormalized.includes("i30frontagerd") ||
-      bodyNormalized.includes("i30frontageroad");
+      identityNormalized.includes("interstatehighway30") ||
+      identityNormalized.includes("i30frontagerd") ||
+      identityNormalized.includes("i30frontageroad");
     const addressOk = addressCoreOk && streetAliasOk;
-    const phoneOk = digits(body).includes(digits(EXPECTED.phone));
+    const phoneLinks = [...document.querySelectorAll('a[href^="tel:"]')]
+      .map(a => a.href || "");
+    const phoneEvidence = digits([body, ...phoneLinks].join(" "));
+    const phoneOk = phoneEvidence.includes(digits(EXPECTED.phone));
     return {
       ok: titleOk && addressOk && phoneOk, title, titleOk, addressOk, phoneOk,
       diagnostic: {
@@ -112,19 +121,19 @@
         h1Title,
         bodyInnerTextLength: bodyText.length,
         bodyTextContentLength: bodyContent.length,
-        hasStreetNumber: bodyNormalized.includes("5107"),
-        hasGreenville: bodyNormalized.includes("greenville"),
-        hasTexas: bodyNormalized.includes("tx"),
-        hasZip: bodyNormalized.includes("75402"),
-        hasPhone: digits(body).includes(digits(EXPECTED.phone)),
+        hasStreetNumber: identityNormalized.includes("5107"),
+        hasGreenville: identityNormalized.includes("greenville"),
+        hasTexas: identityNormalized.includes("tx"),
+        hasZip: identityNormalized.includes("75402"),
+        hasPhone: phoneOk,
         hasStreetAlias: streetAliasOk,
+        addressEvidenceSource: "visible page text and decoded Google Maps URL",
+        phoneEvidenceSource: "visible page text and tel: links",
         currentUrl: location.href,
         matchingLinks: [...document.querySelectorAll("a[href]")]
           .filter(a => /car-mart|tel:/i.test((a.href || "") + " " + (a.innerText || "")))
           .slice(0, 12)
           .map(a => ({ text: clean(a.innerText || a.textContent), href: a.href })),
-        iframes: [...document.querySelectorAll("iframe")]
-          .map(frame => ({ title: frame.title || "", src: frame.src || "" })).slice(0, 5),
         bodyTextSample: clean(bodyText).slice(0, 900)
       }
     };
