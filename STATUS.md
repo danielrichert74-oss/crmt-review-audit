@@ -147,3 +147,4 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 - Tightened the automatic identity gate so a single h1 or document-title source must contain both CAR-MART and Greenville; the collector records the matching title rather than a generic page heading. JavaScript syntax parsing passed.
 - Added a fallback scan of scrollable containers containing review cards when the card-ancestor and role=feed selectors fail. The userscript's embedded collector version label is aligned to v0.5.0; JavaScript syntax parsing passed.
+- Added a partial-bundle fallback: if review cards are captured but no scroll container can be identified, the collector now exports the partial evidence bundle instead of leaving records only in browser storage. JavaScript syntax parsing passed.
