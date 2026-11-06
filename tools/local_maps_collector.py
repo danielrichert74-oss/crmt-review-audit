@@ -207,19 +207,29 @@ def main():
         except Exception:
             pass
 
-        opened_reviews = choose_reviews(page)
-        lowest_selected = choose_lowest(page) if opened_reviews else False
-        if not opened_reviews:
-            print("STOP: could not positively open the listing's Reviews panel.", file=sys.stderr)
-        if not lowest_selected:
-            print("STOP: could not positively select Lowest sorting.", file=sys.stderr)
-
         listing_title = ""
         try:
             listing_title = clean(page.locator("h1").first.inner_text(timeout=1500))
         except Exception:
             pass
+        # Fail closed if Google did not open the intended business profile.
+        # The exact title check is a minimum identity gate, not full address
+        # verification; the manifest preserves the title and URL for review.
+        normalized_title = re.sub(r"[^a-z0-9]", "", listing_title.lower())
+        identity_verified = "carmart" in normalized_title and "greenville" in normalized_title
         listing_url = page.url
+
+        opened_reviews = choose_reviews(page) if identity_verified else False
+        lowest_selected = choose_lowest(page) if opened_reviews else False
+        if not identity_verified:
+            print(
+                f"STOP: listing title did not verify as CAR-MART of Greenville: {listing_title!r}",
+                file=sys.stderr
+            )
+        elif not opened_reviews:
+            print("STOP: could not positively open the listing's Reviews panel.", file=sys.stderr)
+        if identity_verified and not lowest_selected:
+            print("STOP: could not positively select Lowest sorting.", file=sys.stderr)
         scroll_meta = find_scroll_container(page)
         stable_rounds = 0
         previous_count = 0
@@ -278,6 +288,7 @@ def main():
         manifest = {
             "started_at_utc": run_started, "finished_at_utc": now(),
             "query": args.query, "listing_title": listing_title,
+            "identity_verified_by_title": identity_verified,
             "listing_url": listing_url, "opened_reviews": opened_reviews,
             "selected_lowest": lowest_selected, "scroll_container": scroll_meta,
             "unique_cards_captured": len(captured),
