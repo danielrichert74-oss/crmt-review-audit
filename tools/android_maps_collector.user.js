@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.5
+// @version      0.2.0
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -24,6 +24,9 @@
   let captureMode = null;
   let observer = null;
   let lastCapture = null;
+  let autoTimer = null;
+  let autoIdle = 0;
+  let autoSteps = 0;
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
@@ -60,7 +63,8 @@
       <button data-action="manual">Arm (Lowest confirmed visually)</button>
       <button data-action="unsorted">Arm (Unsorted visible reviews)</button>
       <button data-action="capture">Capture visible</button>
-      <button data-action="scroll">Scroll feed once</button>
+      <button data-action="auto">AUTO-COLLECT feed</button>
+      <button data-action="stop">Stop auto-collect</button>
       <button data-action="raw">Export raw JSONL</button>
       <button data-action="one">Export one-star JSONL</button>
       <button data-action="csv">Export one-star CSV</button>
@@ -260,6 +264,51 @@
     status("Could not identify the review feed. Scroll manually, then tap Capture visible.");
   }
 
+  function stopAuto(message) {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+    status(message || ("Auto-collect stopped. " + cards.size + " unique reviews captured."));
+  }
+
+  function autoCollect() {
+    if (!armed) return status("Verify the dealership and arm a capture mode first.");
+    if (autoTimer) return status("Auto-collect is already running.");
+    const firstCard = document.querySelector("[data-review-id],.jftiEf");
+    if (!firstCard) return status("No review cards found. Open the Reviews list first.");
+    let feed = firstCard.parentElement;
+    while (feed && feed !== document.body) {
+      const css = getComputedStyle(feed);
+      if (/(auto|scroll)/.test(css.overflowY) && feed.scrollHeight > feed.clientHeight + 30) break;
+      feed = feed.parentElement;
+    }
+    if (!feed || feed === document.body) feed = document.querySelector('[role="feed"]');
+    if (!feed) return status("Could not identify the review feed. No data was changed.");
+    autoIdle = 0;
+    autoSteps = 0;
+    status("AUTO-COLLECT running. Keep this tab open; do not navigate away.");
+    autoTimer = setInterval(() => {
+      if (!armed || !document.body.contains(feed)) return stopAuto("Stopped: review feed or capture state changed.");
+      const beforeCount = cards.size;
+      captureVisible();
+      const added = cards.size - beforeCount;
+      const beforeTop = feed.scrollTop;
+      const maxTop = Math.max(0, feed.scrollHeight - feed.clientHeight);
+      feed.scrollTop = Math.min(maxTop, beforeTop + Math.max(500, Math.floor(feed.clientHeight * 0.78)));
+      feed.dispatchEvent(new Event("scroll", { bubbles: true }));
+      autoSteps++;
+      if (added > 0 || feed.scrollTop > beforeTop) autoIdle = 0;
+      else autoIdle++;
+      if (autoSteps >= 500) return stopAuto("Safety stop after 500 scroll cycles. " + cards.size + " reviews captured.");
+      if (autoIdle >= 7 && feed.scrollTop >= maxTop - 5) {
+        captureVisible();
+        return stopAuto("Feed appears exhausted after 7 idle checks. " + cards.size + " unique reviews captured. Completeness is NOT verified.");
+      }
+      status("AUTO-COLLECT · " + cards.size + " unique · " +
+        [...cards.values()].filter(x => x.rating_value === 1).length +
+        " one-star · pass " + autoSteps);
+    }, 1400);
+  }
+
   function download(filename, content, type) {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
@@ -372,6 +421,8 @@
         captureVisible();
       }
     } else if (action === "capture") captureVisible();
+    else if (action === "auto") autoCollect();
+    else if (action === "stop") stopAuto();
     else if (action === "scroll") scrollOnce();
     else if (action === "raw") exportRaw();
     else if (action === "one") exportOneStar();
