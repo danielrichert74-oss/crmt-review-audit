@@ -43,3 +43,10 @@ Keep raw capture separate from derived evidence:
 ## Zero-cost rule
 
 No paid APIs, paid credits, subscriptions, proxies, card trials, or billing-enabling upgrades are authorized. If a proposed path has uncertain charges, do not use it.
+
+## Maintenance pass — 2026-11-06
+
+- Corrected the README so it no longer describes the failed Gosom experiment as the active collection design.
+- Fixed a JSONL serialization defect in the local collector: each captured review is now terminated by an actual newline, rather than the two-character literal sequence `\\n`.
+- Re-fetched the committed source and verified the corrected write statement is present.
+- These are repository/code inspections only. They do not constitute a Python runtime test or a live Google Maps test.
