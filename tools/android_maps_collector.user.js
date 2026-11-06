@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.0
+// @version      0.1.1
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -89,8 +89,15 @@
     const titleNormalized = norm(title).replace(/[^a-z0-9]/g, "");
     const titleOk = EXPECTED.titleTokens.every(t => titleNormalized.includes(t));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
-    const addressOk = (EXPECTED.address.toLowerCase().match(/[a-z0-9]+/g) || [])
-      .filter(x => x.length > 1).every(t => bodyNormalized.includes(t));
+    // Google Maps may display this verified address as "5107 I-30 Frontage Rd"
+    // rather than "5107 Interstate Highway 30". Keep all other identity checks strict.
+    const addressCoreOk = ["5107", "greenville", "tx", "75402"]
+      .every(token => bodyNormalized.includes(token));
+    const streetAliasOk =
+      bodyNormalized.includes("interstatehighway30") ||
+      bodyNormalized.includes("i30frontagerd") ||
+      bodyNormalized.includes("i30frontageroad");
+    const addressOk = addressCoreOk && streetAliasOk;
     const phoneOk = digits(body).includes(digits(EXPECTED.phone));
     return { ok: titleOk && addressOk && phoneOk, title, titleOk, addressOk, phoneOk };
   }
