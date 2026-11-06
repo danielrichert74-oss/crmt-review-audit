@@ -47,6 +47,22 @@ The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
 30, Greenville, TX 75402, phone 903-458-9900. Do not use this build for another
 location without changing and reviewing those expected values.
 
+### One-click unsorted run (v0.4.0)
+
+From the dealership overview page, tap **RUN AUDIT (all reviews)**. The script
+checks the dealership name/address/phone, opens the Reviews tab, waits for review
+cards, then scrolls and captures the rendered feed automatically. It does not
+require the Lowest sort control, which was missing in the prior mobile UI
+attempt. The one-star set is derived from all captured ratings after collection.
+
+When the feed appears exhausted (or collection is manually stopped), the script
+automatically downloads one JSON evidence bundle containing raw reviews, the
+derived one-star subset, identity checks, collection timestamps, scroll count,
+stop reason, field-missing counts, and an explicit `complete: false` flag.
+Keep the tab open during collection. The one-click run is still experimental:
+feed exhaustion is not proof that Google exposed every historical review, and
+the captured count must be reconciled against a fresh source benchmark.
+
 ## Important limitations
 
 - This is a prototype. It has not been tested on a live Google Maps page or
@@ -62,7 +78,7 @@ location without changing and reviewing those expected values.
   selected Lowest; it is not represented as automatic DOM verification.
 - The capture is held in the current page session until exported. Do not reload
   or close the tab before exporting.
-- The manifest always records `complete: false`. Reconcile the captured count
+- The manifest and automatic evidence bundle always record `complete: false`. Reconcile the captured count
   against the current Google listing and perform independent spot checks before
   using it as an audit exhibit.
 - The userscript does not submit, edit, like, or otherwise interact with reviews.
