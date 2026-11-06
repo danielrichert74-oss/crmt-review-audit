@@ -10,8 +10,8 @@ background server.
 
 Files:
 - `tools/android_maps_collector.user.js` — userscript
-- `tools/filter_one_star.py` — optional desktop-side JSONL processor for a
-  downloaded raw file
+- `tools/filter_one_star.py` — JSONL one-star derivation
+- `tools/process_android_bundle.py` — processor for the one-click JSON bundle
 
 ## One-time browser setup
 
@@ -28,21 +28,13 @@ Files:
 
 ## Greenville pilot
 
-1. In Firefox, open Google Maps and search for CAR-MART of Greenville, Texas.
-2. Open the business profile overview. Before opening Reviews, tap **Verify
-   business**. Google may hide address and phone details after switching to
-   the review view, so identity is checked on the overview page first.
-3. Open Reviews and choose the **Lowest** review sort in Google Maps.
-4. Tap **Arm (Lowest detected)** if the script detects Google's selected state.
-   If the live UI does not expose that state, visually confirm Lowest is
-   selected and tap **Arm (Lowest confirmed visually)** instead. The manifest
-   distinguishes automatic DOM verification from user confirmation.
-5. Tap **Capture visible**, then **Scroll feed once**. Allow the page to load,
-   and capture again. Repeat while the list continues to load. The script also
-   watches page changes and deduplicates cards it sees.
-6. Export **raw JSONL**, **one-star JSONL**, **one-star CSV**, and **manifest**.
-   Keep the raw file and manifest together as source artifacts.
+1. Open the Google Maps business overview for CAR-MART of Greenville, Texas.
+2. Confirm the profile is the Greenville dealership.
+3. Tap **RUN AUDIT (all reviews)** in the CRMT panel.
+4. Keep Firefox on the listing while the collector opens Reviews, captures visible cards, scrolls the feed, and waits for the feed to stop yielding new cards.
+5. When the collector stops, it automatically downloads one JSON evidence bundle. Preserve that original file unchanged.
 
+The one-click route deliberately captures the default/unsorted review feed. It does not depend on a Lowest sort control, which was missing in the mobile interface. The processor derives one-star records from the captured raw cards afterward.
 The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
 30, Greenville, TX 75402, phone 903-458-9900. Do not use this build for another
 location without changing and reviewing those expected values.
@@ -73,21 +65,22 @@ the captured count must be reconciled against a fresh source benchmark.
 - The script only captures review cards that become visible in the page. It
   disarms if the verified business name is no longer visible, but it cannot
   establish that all historical reviews were exposed.
-- The sort-state detector may not recognize every Google Maps UI version.
-  The separate manual confirmation button records that the user visually
-  selected Lowest; it is not represented as automatic DOM verification.
-- The capture is held in the current page session until exported. Do not reload
-  or close the tab before exporting.
-- The manifest and automatic evidence bundle always record `complete: false`. Reconcile the captured count
-  against the current Google listing and perform independent spot checks before
-  using it as an audit exhibit.
+- The one-click Android path does not claim a verified sort. It records
+  `unverified-or-default-sort` and derives one-star rows after collecting all
+  visible ratings. The older manual Lowest buttons remain for diagnostic use.
+- Captures are persisted in browser-local storage and the evidence bundle is
+  downloaded when auto-collection stops. Keep the tab open during collection;
+  do not reload or close it before the bundle is downloaded.
+- The manifest and automatic evidence bundle always record `complete: false`.
+  Reconcile the captured count against the current Google listing and perform
+  independent spot checks before using it as an audit exhibit.
 - The userscript does not submit, edit, like, or otherwise interact with reviews.
 
 ## Free and privacy characteristics
 
 Firefox and the Violentmonkey add-on are free to install. The script itself
-uses no paid API or metered browser service. Review data stays in the page's
-in-memory session until the user explicitly downloads an export. The extension
+uses no paid API or metered browser service. Review data stays in the browser profile's local storage and is exported to
+  the device only when the user starts or stops an export-producing collection. The extension
 does request permission to access website content so it can run on Google Maps.
 
 
