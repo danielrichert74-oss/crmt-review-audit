@@ -178,3 +178,7 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - The trace is capped at 600 cycles to keep the bundle bounded. It is diagnostic evidence of what the browser session did, not proof that Google exposed every historical review.
 - Re-fetched the committed userscript after the change; JavaScript syntax parsing passed and all 9 targeted static checks passed, including trace export and the permanent `complete: false` safeguard.
 - This is static verification only. It does not establish that the selected container is the real review feed or that cards load correctly on the user's live Android Google Maps page.
+
+
+- Extended the offline bundle processor to summarize the Android scroll trace in the audit manifest: valid trace cycles, reported new-card counts, cycles with new cards, maximum observed scroll position/height, and bottom-state observations.
+- Added a fixture test for this summary and confirmed the permanent incomplete flag remains false in the test assertion. The test has been committed but has not yet been executed in a real Python checkout in this environment.
