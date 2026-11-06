@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.2
+// @version      0.1.3
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -117,7 +117,15 @@
         hasTexas: bodyNormalized.includes("tx"),
         hasZip: bodyNormalized.includes("75402"),
         hasPhone: digits(body).includes(digits(EXPECTED.phone)),
-        hasStreetAlias: streetAliasOk
+        hasStreetAlias: streetAliasOk,
+        currentUrl: location.href,
+        matchingLinks: [...document.querySelectorAll("a[href]")]
+          .filter(a => /car-mart|tel:/i.test((a.href || "") + " " + (a.innerText || "")))
+          .slice(0, 12)
+          .map(a => ({ text: clean(a.innerText || a.textContent), href: a.href })),
+        iframes: [...document.querySelectorAll("iframe")]
+          .map(frame => ({ title: frame.title || "", src: frame.src || "" })).slice(0, 5),
+        bodyTextSample: clean(bodyText).slice(0, 900)
       }
     };
   }
