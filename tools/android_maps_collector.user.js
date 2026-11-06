@@ -380,6 +380,17 @@
       feed = feed.parentElement;
     }
     if (!feed || feed === document.body) feed = document.querySelector('[role="feed"]');
+    if (!feed) {
+      const candidates = [...document.querySelectorAll("div")].filter(node => {
+        if (!node.querySelector("[data-review-id],.jftiEf")) return false;
+        const css = getComputedStyle(node);
+        return /(auto|scroll)/.test(css.overflowY) &&
+          node.scrollHeight > node.clientHeight + 30;
+      });
+      candidates.sort((a, b) =>
+        (b.clientHeight * b.clientWidth) - (a.clientHeight * a.clientWidth));
+      feed = candidates[0] || null;
+    }
     if (!feed) return status("Could not identify the review feed. No data was changed.");
     autoIdle = 0;
     autoSteps = 0;
@@ -435,7 +446,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "crmt-android-userscript-0.4.0",
+        collector: "crmt-android-userscript-0.5.0",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
