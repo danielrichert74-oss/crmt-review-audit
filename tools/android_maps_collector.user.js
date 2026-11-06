@@ -361,8 +361,9 @@
       return rect.width > 0 && rect.height > 0 &&
         css.visibility !== "hidden" && css.display !== "none";
     });
-    const labelOf = node => clean((node.getAttribute("aria-label") || "") + " " +
-      (node.innerText || node.textContent || ""));
+    const labelOf = node => clean(
+      node.getAttribute("aria-label") || node.innerText || node.textContent || ""
+    );
     const safeLabel = label => /\breviews?\b/i.test(label) &&
       !/write a review|review this place|review your visit|review guidelines/i.test(label);
     const exact = candidates.find(node => {
@@ -385,7 +386,7 @@
     if (!target) {
       const showDetails = candidates.find(node =>
         node.matches('button,[role="button"]') &&
-        /^show details$/i.test(labelOf(node))
+        /^show details(?:\\s+.*)?$/i.test(labelOf(node))
       );
       if (showDetails) {
         try {
