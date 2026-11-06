@@ -100,7 +100,7 @@
       el.querySelector(selector)?.textContent || "");
     const ratingNode = el.querySelector('[role="img"][aria-label*="star"],[aria-label*="star"]');
     const ratingLabel = ratingNode?.getAttribute("aria-label") || "";
-    const ratingMatch = ratingLabel.match(/([1-5](?:\\.\\d+)?)\\s*star/i);
+    const ratingMatch = ratingLabel.match(/([1-5](?:\.\d+)?)\s*star/i);
     const response = el.querySelector(".CDe7pd,[class*='owner-response'],[class*='reply']");
     const author = el.querySelector('a[href*="/contrib/"]');
     const row = {
@@ -190,14 +190,14 @@
   function exportRaw() {
     const rows = [...cards.values()];
     download("crmt-greenville-raw-" + Date.now() + ".jsonl",
-      rows.map(x => JSON.stringify(x)).join("\\n") + (rows.length ? "\\n" : ""),
+      rows.map(x => JSON.stringify(x)).join("\n") + (rows.length ? "\n" : ""),
       "application/x-ndjson");
   }
 
   function exportOneStar() {
     const rows = [...cards.values()].filter(x => x.rating_value === 1);
     download("crmt-greenville-one-star-" + Date.now() + ".jsonl",
-      rows.map(x => JSON.stringify(x)).join("\\n") + (rows.length ? "\\n" : ""),
+      rows.map(x => JSON.stringify(x)).join("\n") + (rows.length ? "\n" : ""),
       "application/x-ndjson");
   }
 
@@ -214,7 +214,7 @@
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
-    ].join("\\r\\n");
+    ].join("\r\n");
     download("crmt-greenville-one-star-" + Date.now() + ".csv", csv, "text/csv");
   }
 
