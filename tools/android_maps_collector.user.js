@@ -56,6 +56,7 @@
   let autoStopReason = "not-started";
   let autoBundleExported = false;
   let autoFeedInfo = null;
+  let autoTrace = [];
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
@@ -434,6 +435,7 @@
     }
     autoIdle = 0;
     autoSteps = 0;
+    autoTrace = [];
     autoStartedAt = new Date().toISOString();
     autoFinishedAt = null;
     autoStopReason = "running";
@@ -442,14 +444,21 @@
     autoTimer = setInterval(() => {
       if (!armed || !document.body.contains(feed)) return stopAuto("Stopped: review feed or capture state changed.");
       const beforeCount = cards.size;
+      const beforeTop = feed.scrollTop;
+      const beforeHeight = feed.scrollHeight;
+      const beforeVisible = feed.querySelectorAll("[data-review-id],.jftiEf").length;
       captureVisible();
       const added = cards.size - beforeCount;
-      const beforeTop = feed.scrollTop;
       const maxTop = Math.max(0, feed.scrollHeight - feed.clientHeight);
       feed.scrollTop = Math.min(maxTop, beforeTop + Math.max(500, Math.floor(feed.clientHeight * 0.78)));
       feed.dispatchEvent(new Event("scroll", { bubbles: true }));
       autoSteps++;
-      if (added > 0 || feed.scrollTop > beforeTop) autoIdle = 0;
+      const afterTop = feed.scrollTop;
+      const afterHeight = feed.scrollHeight;
+      const afterVisible = feed.querySelectorAll("[data-review-id],.jftiEf").length;
+      autoTrace.push({cycle:autoSteps,at_utc:new Date().toISOString(),captured_total:cards.size,newly_captured:added,visible_cards_before_scroll:beforeVisible,visible_cards_after_scroll:afterVisible,scroll_top_before:Math.round(beforeTop),scroll_top_after:Math.round(afterTop),scroll_height_before:Math.round(beforeHeight),scroll_height_after:Math.round(afterHeight),client_height:Math.round(feed.clientHeight),at_bottom_after_scroll:afterTop>=Math.max(0,afterHeight-feed.clientHeight)-5});
+      if (autoTrace.length > 600) autoTrace.shift();
+      if (added > 0 || afterTop > beforeTop || afterHeight > beforeHeight) autoIdle = 0;
       else autoIdle++;
       if (autoSteps >= 500) return stopAuto("Safety stop after 500 scroll cycles. " + cards.size + " reviews captured.");
       if (autoIdle >= 7 && feed.scrollTop >= maxTop - 5) {
@@ -495,6 +504,8 @@
         stop_reason: autoStopReason,
         scroll_cycles: autoSteps,
         feed_detection: autoFeedInfo,
+        scroll_trace: autoTrace,
+        scroll_trace_cycles_recorded: autoTrace.length,
         complete: false,
         completeness_note: "Visible Google Maps UI capture. Feed exhaustion and count matching do not prove complete historical coverage."
       },
