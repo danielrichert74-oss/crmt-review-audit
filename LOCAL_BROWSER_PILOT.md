@@ -41,8 +41,11 @@ records only in a downstream derived file; do not destroy the original capture.
 ## Current limitations
 
 - Google Maps changes its interface; selectors may need adjustment.
-- The collector is experimental and may fail to select the correct listing,
-  review panel, or sort option. Inspect the visible browser during the pilot.
+- The collector is experimental. It now fails closed unless title, address,
+  and phone match the expected Greenville business, and unless Lowest exposes
+  an explicit selected-state signal. Inspect the visible browser during the pilot.
+- It attempts to expand card-local "More" controls, but Google may still expose
+  truncated review text or omit owner-response dates.
 - Google may virtualize review cards, limit access, or stop loading older reviews.
 - The script never marks a run complete. A stalled scroll is not proof of
   end-of-list, and a count comparison is still required.
