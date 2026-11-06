@@ -170,3 +170,11 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - This prevents a menu action label from being mistaken for an applied sort state. The separate user-visually-confirmed mode remains available and is explicitly labeled in the evidence.
 - JavaScript syntax parsing passed. Static acceptance checks passed for all three collection paths (automatic unsorted, explicit unsorted, machine-detected Lowest, and user-confirmed Lowest), feed traversal/safety stops, automatic/partial bundle export, raw preservation, one-star derivation, identity gate, and incomplete-coverage flag (15/15 checks).
 - These are code/static checks, not live Google Maps DOM tests. No live-device qualification is claimed.
+
+
+## Scroll-trace evidence hardening — 2026-11-06
+
+- Android collector now records a bounded per-cycle traversal trace in the exported bundle: cycle number, timestamp, unique capture count, newly captured count, visible card count before/after scroll, scrollTop before/after, scrollHeight before/after, client height, and whether the feed reached its bottom.
+- The trace is capped at 600 cycles to keep the bundle bounded. It is diagnostic evidence of what the browser session did, not proof that Google exposed every historical review.
+- Re-fetched the committed userscript after the change; JavaScript syntax parsing passed and all 9 targeted static checks passed, including trace export and the permanent `complete: false` safeguard.
+- This is static verification only. It does not establish that the selected container is the real review feed or that cards load correctly on the user's live Android Google Maps page.
