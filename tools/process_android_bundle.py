@@ -68,6 +68,34 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             stream.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def summarize_scroll_trace(collection: dict[str, Any]) -> dict[str, Any]:
+    trace = collection.get("scroll_trace")
+    if not isinstance(trace, list):
+        trace = []
+    rows = [row for row in trace if isinstance(row, dict)]
+    def number(row: dict[str, Any], key: str) -> float | None:
+        value = row.get(key)
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+    positions = [number(row, "scroll_top_after") for row in rows]
+    positions = [value for value in positions if value is not None]
+    heights = [number(row, "scroll_height_after") for row in rows]
+    heights = [value for value in heights if value is not None]
+    newly = [number(row, "newly_captured") for row in rows]
+    newly = [value for value in newly if value is not None]
+    bottom_checks = [row.get("at_bottom_after_scroll") for row in rows if isinstance(row.get("at_bottom_after_scroll"), bool)]
+    return {
+        "trace_present": isinstance(collection.get("scroll_trace"), list),
+        "trace_cycles_declared": collection.get("scroll_trace_cycles_recorded"),
+        "trace_cycles_valid": len(rows),
+        "new_cards_reported_in_trace": int(sum(newly)),
+        "cycles_with_new_cards": sum(1 for value in newly if value > 0),
+        "max_scroll_top": max(positions) if positions else None,
+        "max_scroll_height": max(heights) if heights else None,
+        "cycles_reporting_bottom": sum(1 for value in bottom_checks if value),
+        "trace_limit_note": "Trace is diagnostic only; it cannot establish complete historical coverage."
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Android audit bundle JSON")
@@ -145,6 +173,7 @@ def main() -> None:
         "schema_version": bundle.get("schema_version"),
         "listing": listing,
         "collection": collection,
+        "scroll_trace_summary": summarize_scroll_trace(collection),
         "counts": dict(counts),
         "supplied_one_star_subset_count": supplied_subset_count,
         "derived_subset_count_matches_bundle": (
