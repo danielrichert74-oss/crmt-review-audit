@@ -361,9 +361,12 @@
       return rect.width > 0 && rect.height > 0 &&
         css.visibility !== "hidden" && css.display !== "none";
     });
-    const labelOf = node => clean(
-      node.getAttribute("aria-label") || node.innerText || node.textContent || ""
-    );
+    const labelOf = node => clean([
+      node.getAttribute("aria-label") || "",
+      node.innerText || "",
+      node.textContent || "",
+      node.getAttribute("title") || ""
+    ].filter(Boolean).join(" "));
     const safeLabel = label => /\breviews?\b/i.test(label) &&
       !/write a review|review this place|review your visit|review guidelines/i.test(label);
     const exact = candidates.find(node => {
@@ -386,7 +389,7 @@
     if (!target) {
       const showDetails = candidates.find(node =>
         node.matches('button,[role="button"]') &&
-        /^show details(?:\s+.*)?$/i.test(labelOf(node))
+        /show\s+details/i.test(labelOf(node))
       );
       if (showDetails) {
         try {
@@ -399,7 +402,11 @@
       lastReviewsControlDiagnostic = "Visible review-related controls: " +
         (hints.join(" | ") || "none") + ". Visible buttons: " +
         candidates.filter(node => node.matches('button,[role="tab"],[role="button"]'))
-          .map(labelOf).filter(Boolean).slice(0, 12).join(" | ") +
+          .slice(0, 12).map(node => node.tagName.toLowerCase() +
+            "[role=" + (node.getAttribute("role") || "none") +
+            ",aria=" + (node.getAttribute("aria-label") || "none") +
+            ",text=" + clean(node.innerText || node.textContent || "").slice(0, 90) +
+            ",title=" + (node.getAttribute("title") || "none") + "]").join(" | ") +
         ". Place-page URL: " + location.pathname;
       return false;
     }
