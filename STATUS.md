@@ -55,3 +55,8 @@ No paid APIs, paid credits, subscriptions, proxies, card trials, or billing-enab
 - Added a fail-closed identity gate to the visible-browser collector: it will not open Reviews or collect cards unless the selected Google Maps profile title contains both CAR-MART and Greenville. The manifest records `identity_verified_by_title`.
 - This is a minimum title-based gate, not complete address/phone verification. It prevents an obvious wrong-profile scrape but does not replace manual identity review.
 - No live Google Maps run or Python runtime test was performed in this maintenance pass.
+
+
+- Tightened sort qualification: the collector now selects Lowest, reopens the sort menu, and requires an explicit selected-state signal (`aria-checked`, `aria-selected`, or `data-selected`) before it will collect. The evidence or failure reason is recorded in the manifest. This is intentionally fail-closed and may need adjustment if Google's live DOM exposes a different signal.
+- Corrected the exact-text Lowest selector after reviewing the committed source.
+- Still no runtime or live-browser test: no Actions run was launched because the repository's remaining free compute allowance is unknown, and the $0 rule prohibits risking billable usage. TinyFish browser automation is also metered, so it was not used.
