@@ -111,7 +111,7 @@ def choose_lowest(page):
         return {"verified": False, "evidence": "sort-control-not-found"}
 
     try:
-        option = page.get_by_text(re.compile(r"^\\s*Lowest\\s*$", re.I)).last
+        option = page.get_by_text(re.compile(r"^\s*Lowest\s*$", re.I)).last
         if not option.count() or not option.is_visible():
             return {"verified": False, "evidence": "lowest-option-not-visible"}
         option.click(timeout=4000)
