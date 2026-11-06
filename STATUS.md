@@ -208,3 +208,5 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Evidence-preservation hardening: the collector now keys no-ID cards by stable DOM-node/content-signature observations, preserves same-content cards from separate DOM nodes, and records a potential-duplicate fingerprint. The processor no longer discards matching one-star rows; it preserves every observed row and reports potential duplicate counts/fingerprints. This avoids deleting a legitimate distinct review merely because its content matches another review.
 - Added a direct **Export full evidence bundle** button as a user-gesture fallback if an automatic mobile download is blocked.
 - Expanded regression fixtures to cover repeated Google review IDs and separate review IDs with identical content. Full repository test execution and live Android qualification remain outstanding.
+
+- Candidate version advanced to 0.7.2 after duplicate-preservation and mobile full-bundle export changes; source regression tests now expect 0.7.2. Targeted logic checks passed; no full-checkout test or live Android result is claimed.
