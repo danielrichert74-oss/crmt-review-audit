@@ -1,0 +1,2 @@
+store_name,state,city,address,phone,official_store_page,official_google_maps_link,google_place_id,status,notes
+CAR-MART of Greenville,TX,Greenville,"5107 Interstate Highway 30, Greenville, TX 75402",903-458-9900,https://www.car-mart.com/locations/?search=Greenville+TX,https://www.google.com/maps/place/5107+Interstate+Highway+30+Greenville+TX+75402,,place_id_pending,"Official America's Car-Mart location page links to this Google Maps destination; verify canonical business Place ID before collecting."
