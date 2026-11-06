@@ -15,7 +15,7 @@ class AndroidUserscriptSourceChecks(unittest.TestCase):
     def test_runtime_and_evidence_versions_match(self):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertRegex(source, r"// @version\s+0\.7\.5")
-        self.assertIn('review-audit-tool-android-0.7.5', source)
+        self.assertIn('review-audit-tool-android-0.7.6', source)
         self.assertNotIn('Pilot 0.6.0 loaded', source)
 
 
@@ -36,6 +36,8 @@ class AndroidUserscriptSourceChecks(unittest.TestCase):
         self.assertIn("const countButton = candidates.find", source)
         self.assertIn("const samePlaceLink = candidates.find", source)
         self.assertIn("Visible review-related controls:", source)
+        self.assertIn("lastReviewsControlDiagnostic ||", source)
+        self.assertIn("Visible buttons:", source)
 
 
 if __name__ == "__main__":
