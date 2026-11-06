@@ -130,10 +130,13 @@
     })();
     const body = clean([bodyText, bodyContent, ariaText, documentTitle].join(" "));
     const identityText = clean([body, decodedUrl].join(" "));
-    const title = h1Title || documentTitle;
-    const titleSources = norm([h1Title, documentTitle].join(" "))
-      .replace(/[^a-z0-9]/g, "");
-    const titleOk = EXPECTED.titleTokens.every(t => titleSources.includes(t));
+    const titleCandidates = [h1Title, documentTitle].filter(Boolean);
+    const matchingTitle = titleCandidates.find(candidate => {
+      const normalized = norm(candidate).replace(/[^a-z0-9]/g, "");
+      return EXPECTED.titleTokens.every(token => normalized.includes(token));
+    });
+    const title = matchingTitle || h1Title || documentTitle;
+    const titleOk = Boolean(matchingTitle);
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
     const identityNormalized = norm(identityText).replace(/[^a-z0-9]/g, "");
     // On mobile Maps, the address is encoded in the canonical /place/ URL
