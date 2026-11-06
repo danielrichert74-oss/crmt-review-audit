@@ -12,7 +12,7 @@
   "use strict";
 
   const EXPECTED = {
-    titleTokens: ["car-mart", "greenville"],
+    titleTokens: ["carmart", "greenville"],
     address: "5107 Interstate Highway 30, Greenville, TX 75402",
     phone: "903-458-9900"
   };
@@ -78,7 +78,8 @@
     const ariaText = [...document.querySelectorAll("[aria-label]")]
       .map(node => node.getAttribute("aria-label") || "").join(" ");
     const body = clean((document.body?.innerText || "") + " " + ariaText);
-    const titleOk = EXPECTED.titleTokens.every(t => norm(title).includes(norm(t)));
+    const titleNormalized = norm(title).replace(/[^a-z0-9]/g, "");
+    const titleOk = EXPECTED.titleTokens.every(t => titleNormalized.includes(t));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
     const addressOk = (EXPECTED.address.toLowerCase().match(/[a-z0-9]+/g) || [])
       .filter(x => x.length > 1).every(t => bodyNormalized.includes(t));
@@ -144,11 +145,13 @@
     const currentTitle = clean(document.querySelector("h1")?.innerText);
     const currentPageText = norm((document.body?.innerText || "") + " " +
       [...document.querySelectorAll("[aria-label]")]
-        .map(node => node.getAttribute("aria-label") || "").join(" "));
+        .map(node => node.getAttribute("aria-label") || "").join(" "))
+        .replace(/[^a-z0-9]/g, "");
+    const currentTitleNormalized = norm(currentTitle).replace(/[^a-z0-9]/g, "");
     const sameBusinessStillVisible = verifiedIdentity &&
       EXPECTED.titleTokens.every(token =>
-        norm(currentTitle).includes(norm(token)) ||
-        currentPageText.includes(norm(token))
+        currentTitleNormalized.includes(token) ||
+        currentPageText.includes(token)
       );
     if (!sameBusinessStillVisible) {
       armed = false;
