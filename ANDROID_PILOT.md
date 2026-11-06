@@ -55,7 +55,8 @@ location without changing and reviewing those expected values.
 - Identity verification must be performed on the business overview before
   opening Reviews because the review view may hide address/contact metadata.
 - The script only captures review cards that become visible in the page. It
-  cannot establish that all historical reviews were exposed.
+  disarms if the verified business name is no longer visible, but it cannot
+  establish that all historical reviews were exposed.
 - The sort-state detector may not recognize every Google Maps UI version.
   The separate manual confirmation button records that the user visually
   selected Lowest; it is not represented as automatic DOM verification.
