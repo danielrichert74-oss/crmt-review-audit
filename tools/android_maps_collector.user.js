@@ -110,13 +110,15 @@
     const response = el.querySelector(".CDe7pd,[class*='owner-response'],[class*='reply']");
     const responseDate = response?.querySelector("[class*='date'],[class*='time'],[aria-label*='ago']");
     const author = el.querySelector('a[href*="/contrib/"]');
+    const cardText = clean(el.innerText || el.textContent || "");
+    const dateMatch = cardText.match(/\\b(?:\\d+ (?:day|week|month|year)s? ago|\\w+ \\d{1,2}, \\d{4})\\b/i);
     const row = {
       review_id: el.getAttribute("data-review-id") || "",
       reviewer_name: get(".d4r55"),
       reviewer_profile_url: author?.href || "",
       rating_label: ratingLabel,
       rating_value: ratingMatch ? Number(ratingMatch[1]) : null,
-      published_at: get(".rsqaWe"),
+      published_at: get(".rsqaWe") || (dateMatch ? dateMatch[0] : ""),
       review_text: get(".wiI7pd") || get("[data-expandable-section]"),
       owner_reply_text: clean(response?.innerText || response?.textContent || ""),
       owner_reply_date: clean(responseDate?.getAttribute("aria-label") ||
@@ -124,7 +126,8 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "crmt-android-userscript-pilot"
+      collector: "crmt-android-userscript-pilot",
+      card_text: cardText
     };
     const keyMaterial = [
       row.reviewer_name, row.published_at, row.review_text, row.rating_label
@@ -233,7 +236,7 @@
     const fields = [
       "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
       "rating_label", "rating_value", "published_at", "review_text",
-      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc"
+      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text"
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
