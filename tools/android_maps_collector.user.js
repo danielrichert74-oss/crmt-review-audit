@@ -75,7 +75,9 @@
 
   function identityCheck() {
     const title = clean(document.querySelector("h1")?.innerText);
-    const body = clean(document.body?.innerText);
+    const ariaText = [...document.querySelectorAll("[aria-label]")]
+      .map(node => node.getAttribute("aria-label") || "").join(" ");
+    const body = clean((document.body?.innerText || "") + " " + ariaText);
     const titleOk = EXPECTED.titleTokens.every(t => norm(title).includes(norm(t)));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
     const addressOk = (EXPECTED.address.toLowerCase().match(/[a-z0-9]+/g) || [])
@@ -106,6 +108,7 @@
     const ratingLabel = ratingNode?.getAttribute("aria-label") || "";
     const ratingMatch = ratingLabel.match(/([1-5](?:\.\d+)?)\s*star/i);
     const response = el.querySelector(".CDe7pd,[class*='owner-response'],[class*='reply']");
+    const responseDate = response?.querySelector("[class*='date'],[class*='time'],[aria-label*='ago']");
     const author = el.querySelector('a[href*="/contrib/"]');
     const row = {
       review_id: el.getAttribute("data-review-id") || "",
@@ -116,8 +119,10 @@
       published_at: get(".rsqaWe"),
       review_text: get(".wiI7pd") || get("[data-expandable-section]"),
       owner_reply_text: clean(response?.innerText || response?.textContent || ""),
-      listing_title: clean(document.querySelector("h1")?.innerText),
-      listing_url: location.href,
+      owner_reply_date: clean(responseDate?.getAttribute("aria-label") ||
+        responseDate?.innerText || responseDate?.textContent || ""),
+      listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
+      listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
       collector: "crmt-android-userscript-pilot"
     };
@@ -214,7 +219,7 @@
     const fields = [
       "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
       "rating_label", "rating_value", "published_at", "review_text",
-      "owner_reply_text", "listing_title", "listing_url", "collected_at_utc"
+      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc"
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
