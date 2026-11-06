@@ -8,12 +8,12 @@ The first hosted Gosom scraper experiment failed qualification: it captured only
 
 Two experimental local collectors now target the rendered Google Maps interface:
 - Desktop/laptop Playwright: `tools/local_maps_collector.py`
-- Android Firefox userscript: `tools/android_maps_collector.user.js`
+- Android Firefox userscript: `tools/android_maps_collector.user.js` (v0.3.0)
 - Android setup: `ANDROID_PILOT.md`
 - Desktop setup: `requirements-local.txt`, `LOCAL_BROWSER_PILOT.md`
 - Non-destructive one-star derivation: `tools/filter_one_star.py`
 
-Both collectors are **not yet live-tested**. The desktop path uses Playwright; the Android path uses Firefox plus Violentmonkey and user-controlled visible-card capture. Both are intended to verify the Greenville identity and Lowest sorting before capture. The Android userscript exports raw and one-star JSONL/CSV plus a manifest. The desktop filter derives one-star records without modifying raw captures. Neither path declares completeness automatically. The next engineering gate is a live Greenville run that proves correct listing identity, successful Lowest sorting, real feed movement, accurate field extraction, and count reconciliation.
+Both collectors are **not yet live-tested**. The Android v0.3.0 persistence/configuration changes have been committed but not yet exercised against live Google Maps. The desktop path uses Playwright; the Android path uses Firefox plus Violentmonkey and user-controlled visible-card capture. Both are intended to verify the Greenville identity and Lowest sorting before capture. The Android userscript v0.3.0 adds per-listing browser-local persistence and a configurable dealership identity (name, address, phone), so records survive page reloads in the same browser profile and settings can be reused across locations. It exports raw and one-star JSONL/CSV plus a manifest. The desktop filter derives one-star records without modifying raw captures. Neither path declares completeness automatically. The next engineering gate is still a live Greenville run that proves correct listing identity, successful Lowest sorting, real feed movement, accurate field extraction, and count reconciliation.
 
 ## Collection and evidence principles
 
