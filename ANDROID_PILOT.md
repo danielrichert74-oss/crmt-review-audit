@@ -52,7 +52,7 @@ automatically downloads one JSON evidence bundle containing raw reviews, the
 derived one-star subset, identity checks, feed-detection diagnostics, per-cycle scroll trace, collection timestamps, scroll count,
 stop reason, field-missing counts, and an explicit `complete: false` flag.
 Keep the tab open during collection. The one-click run is still an unqualified QA candidate:
-version 0.7.0 prefers the explicit scrollable review feed and records how the feed was selected; feed exhaustion is not proof that Google exposed every historical review, and
+version 0.7.2 prefers the explicit scrollable review feed and records how the feed was selected; feed exhaustion is not proof that Google exposed every historical review, and
 the captured count must be reconciled against a fresh source benchmark.
 
 ## Important limitations
