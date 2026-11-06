@@ -12,11 +12,15 @@
 (() => {
   "use strict";
 
-  const EXPECTED = {
+  let EXPECTED = {
     titleTokens: ["carmart", "greenville"],
     address: "5107 Interstate Highway 30, Greenville, TX 75402",
     phone: "903-458-9900"
   };
+  try {
+    const savedConfig = JSON.parse(localStorage.getItem("crmt-review-config-v1") || "null");
+    if (savedConfig && Array.isArray(savedConfig.titleTokens) && savedConfig.address && savedConfig.phone) EXPECTED = savedConfig;
+  } catch (_) {}
   const cards = new Map();
   let storageKey = "crmt-review-capture-greenville-v1";
   let storageWarning = "";
@@ -129,13 +133,10 @@
     const identityNormalized = norm(identityText).replace(/[^a-z0-9]/g, "");
     // On mobile Maps, the address is encoded in the canonical /place/ URL
     // rather than exposed in body text. Validate that URL plus the visible Call link.
-    const addressCoreOk = ["5107", "greenville", "tx", "75402"]
-      .every(token => identityNormalized.includes(token));
-    const streetAliasOk =
-      identityNormalized.includes("interstatehighway30") ||
-      identityNormalized.includes("i30frontagerd") ||
-      identityNormalized.includes("i30frontageroad");
-    const addressOk = addressCoreOk && streetAliasOk;
+    const addressTokens = norm(EXPECTED.address).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
+      .filter(token => token.length >= 3 && !["street", "road", "drive", "avenue", "highway", "interstate", "frontage", "suite", "unit"].includes(token));
+    const addressOk = addressTokens.length > 0 &&
+      addressTokens.every(token => identityNormalized.includes(token));
     const phoneLinks = [...document.querySelectorAll('a[href^="tel:"]')]
       .map(a => a.href || "");
     const phoneEvidence = digits([body, ...phoneLinks].join(" "));
@@ -153,7 +154,7 @@
         hasTexas: identityNormalized.includes("tx"),
         hasZip: identityNormalized.includes("75402"),
         hasPhone: phoneOk,
-        hasStreetAlias: streetAliasOk,
+        configuredAddressTokens: addressTokens,
         addressEvidenceSource: "visible page text and decoded Google Maps URL",
         phoneEvidenceSource: "visible page text and tel: links",
         currentUrl: location.href,
@@ -390,9 +391,10 @@
       if (address === null || !clean(address)) return;
       const phone = prompt("Dealership phone number:", EXPECTED.phone);
       if (phone === null || !clean(phone)) return;
-      EXPECTED.titleTokens = norm(title).split(/\\s+/).filter(Boolean);
+      EXPECTED.titleTokens = norm(title).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
       EXPECTED.address = clean(address);
       EXPECTED.phone = clean(phone);
+      try { localStorage.setItem("crmt-review-config-v1", JSON.stringify(EXPECTED)); } catch (_) {}
       status("Configuration entered. Verify the dealership overview before collecting.");
     } else if (action === "identity") {
       const identity = identityCheck();
@@ -415,7 +417,7 @@
           listing_url_at_verification: location.href
         };
         status("Business identity verified on overview: " + identity.title +
-          ". Now open Reviews and choose Lowest.");
+          ". Restored " + cards.size + " saved review(s). Now open Reviews and choose Lowest.");
       }
     } else if (action === "verify") {
       const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
@@ -462,10 +464,11 @@
     else if (action === "auto") autoCollect();
     else if (action === "stop") stopAuto();
     else if (action === "scroll") scrollOnce();
-    else if (action === "raw") exportRaw();
-    else if (action === "one") exportOneStar();
-    else if (action === "csv") exportCsv();
+    else if (action === "raw") { persistCards(); exportRaw(); }
+    else if (action === "one") { persistCards(); exportOneStar(); }
+    else if (action === "csv") { persistCards(); exportCsv(); }
     else if (action === "manifest") {
+      persistCards();
       const rows = [...cards.values()];
       const identity = verifiedIdentity;
       download("crmt-greenville-manifest-" + Date.now() + ".json",
