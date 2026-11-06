@@ -135,7 +135,7 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Added `tools/process_android_bundle.py` to convert the Android one-click JSON bundle into raw JSONL, independently derived one-star JSONL/CSV, SHA-256 hashes, missing-field counts, optional benchmark comparison, and an audit manifest.
 - Added unit tests for duplicate handling, rating recovery from labels, raw preservation, benchmark comparison, and the permanent incomplete flag.
 - Fixed escaping in the processor's rating-label regex and JSONL newline writer after inspecting the committed source.
-- These additions have not yet been run under Python in this session. JavaScript collector syntax and static acceptance checks passed; live Maps traversal remains untested.
+- Two processor tests and two existing one-star-filter tests passed in isolated temporary Python harnesses (4/4). JavaScript collector syntax and static acceptance checks passed. These are code/fixture tests only; live Maps traversal remains untested.
 
 
 ## Automatic launch hardening — 2026-11-06
@@ -144,3 +144,5 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - It now waits up to 45 seconds for the selected page title itself to identify CAR-MART of Greenville and for the configured address and phone checks to pass. Only then does it open Reviews and begin the unsorted all-ratings capture automatically.
 - The manual RUN AUDIT button remains as a fallback. Tightened the title gate to avoid auto-starting merely because a search-results page contains the dealership name in unrelated page text.
 - JavaScript syntax parsing passed after the change. This remains a candidate build pending live Android/Google Maps qualification.
+
+- Tightened the automatic identity gate so a single h1 or document-title source must contain both CAR-MART and Greenville; the collector records the matching title rather than a generic page heading. JavaScript syntax parsing passed.
