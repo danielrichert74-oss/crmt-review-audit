@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.8
+// @version      0.7.9
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -219,7 +219,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.8",
+      collector: "review-audit-tool-android-0.7.9",
       card_text: cardText
     };
     const keyMaterial = [
@@ -262,23 +262,51 @@
     const currentTitleNormalized = norm(currentTitle).replace(/[^a-z0-9]/g, "");
     const sameBusinessStillVisible = verifiedIdentity &&
       EXPECTED.titleTokens.every(token =>
-        currentTitleNormalized.includes(token) ||
-        currentPageText.includes(token)
+        currentTitleNormalized.includes(token) || currentPageText.includes(token)
       );
     if (!sameBusinessStillVisible) {
       armed = false;
       status("STOP: the verified business name is no longer visible. Re-check the listing before continuing.");
       return;
     }
-    const visible = [...document.querySelectorAll("[data-review-id],.jftiEf")];
-    const idSet = new Set(visible.map(el => el.getAttribute("data-review-id") || "").filter(Boolean));
-    const classOnly = visible.filter(el => el.matches(".jftiEf") && !el.hasAttribute("data-review-id"));
-    let added = 0;
+
+    // Google Maps can place data-review-id on several nested wrappers for
+    // the same review. Group by ID and extract from the richest wrapper once;
+    // otherwise an incomplete outer wrapper can win the dedupe race.
+    const matched = [...document.querySelectorAll("[data-review-id],.jftiEf")];
+    const groups = new Map();
+    for (const el of matched) {
+      const id = el.getAttribute("data-review-id") || "";
+      if (!id) continue;
+      if (!groups.has(id)) groups.set(id, []);
+      groups.get(id).push(el);
+    }
+    const score = row =>
+      (row.reviewer_name ? 8 : 0) +
+      (row.rating_value !== null ? 8 : 0) +
+      (row.published_at ? 4 : 0) +
+      (row.review_text ? 12 : 0) +
+      (row.owner_reply_text ? 2 : 0) +
+      Math.min(5, Math.floor((row.card_text || "").length / 250));
+    const selected = [];
     let duplicateNodes = 0;
-    let withReviewer = 0;
-    let withRating = 0;
-    let withText = 0;
-    for (const el of visible) {
+    let withReviewer = 0, withRating = 0, withText = 0;
+    for (const [id, nodes] of groups) {
+      let best = null;
+      let bestScore = -1;
+      for (const el of nodes) {
+        const row = extractCard(el);
+        const rowScore = score(row);
+        if (rowScore > bestScore) {
+          best = { el, row };
+          bestScore = rowScore;
+        }
+      }
+      duplicateNodes += Math.max(0, nodes.length - 1);
+      if (best) selected.push(best);
+    }
+    let added = 0;
+    for (const {el, row} of selected) {
       for (const button of el.querySelectorAll("button,[role='button']")) {
         const label = clean((button.getAttribute("aria-label") || "") + " " +
           (button.innerText || button.textContent || ""));
@@ -286,31 +314,39 @@
           try { button.click(); } catch (_) {}
         }
       }
-      const row = extractCard(el);
-      if (row.reviewer_name) withReviewer++;
-      if (row.rating_value !== null) withRating++;
-      if (row.review_text) withText++;
-      if (!cards.has(row.capture_key)) {
-        cards.set(row.capture_key, row);
+      // Re-extract after expanding the selected card, so the stored text is
+      // the richest available version of that review.
+      const expanded = extractCard(el);
+      const finalRow = score(expanded) >= score(row) ? expanded : row;
+      if (finalRow.reviewer_name) withReviewer++;
+      if (finalRow.rating_value !== null) withRating++;
+      if (finalRow.review_text) withText++;
+      if (!cards.has(finalRow.capture_key)) {
+        cards.set(finalRow.capture_key, finalRow);
         added++;
       } else {
-        duplicateNodes++;
+        const existing = cards.get(finalRow.capture_key);
+        if (score(finalRow) > score(existing)) cards.set(finalRow.capture_key, finalRow);
       }
     }
     lastCaptureDiagnostics = {
-      matched_nodes: visible.length,
-      nodes_with_review_id: visible.filter(el => Boolean(el.getAttribute("data-review-id"))).length,
-      nodes_without_review_id: classOnly.length,
-      unique_review_ids: idSet.size,
-      nodes_with_reviewer: withReviewer,
-      nodes_with_rating: withRating,
-      nodes_with_text: withText,
-      duplicate_nodes: duplicateNodes
+      matched_nodes: matched.length,
+      nodes_with_review_id: matched.filter(el => Boolean(el.getAttribute("data-review-id"))).length,
+      nodes_without_review_id: matched.filter(el => !el.getAttribute("data-review-id")).length,
+      unique_review_ids: groups.size,
+      duplicate_nodes: duplicateNodes,
+      selected_review_cards: selected.length,
+      selected_cards_with_reviewer: withReviewer,
+      selected_cards_with_rating: withRating,
+      selected_cards_with_text: withText
     };
     lastCapture = new Date().toISOString();
     updateCount();
-    if (added) persistCards();
-    status("Captured " + added + " new card(s); " + visible.length + " matched nodes / " + idSet.size + " unique Google IDs; " + withRating + " rated, " + withReviewer + " with reviewer names." + storageWarning);
+    if (added || selected.length) persistCards();
+    status("Captured " + added + " new review(s); " + matched.length +
+      " DOM matches grouped into " + groups.size + " unique Google IDs; " +
+      withRating + " rated, " + withReviewer + " with reviewer names, " +
+      withText + " with text." + storageWarning);
   }
 
   function scrollOnce() {
@@ -613,7 +649,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.8",
+        collector: "review-audit-tool-android-0.7.9",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
