@@ -9,12 +9,12 @@ SCRIPT = ROOT / "tools" / "android_maps_collector.user.js"
 class AndroidUserscriptSourceChecks(unittest.TestCase):
     def test_await_is_inside_async_function(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertRegex(source, r"async function runUnsortedAudit\\s*\\(")
+        self.assertRegex(source, r"async function runUnsortedAudit\s*\(")
         self.assertIn("await new Promise", source)
 
     def test_runtime_and_evidence_versions_match(self):
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertRegex(source, r"// @version\\s+0\\.7\\.1")
+        self.assertRegex(source, r"// @version\s+0\.7\.1")
         self.assertIn('review-audit-tool-android-0.7.1', source)
         self.assertNotIn('Pilot 0.6.0 loaded', source)
 
