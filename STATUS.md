@@ -70,3 +70,15 @@ No paid APIs, paid credits, subscriptions, proxies, card trials, or billing-enab
 - Corrected the expected-phone digit-normalization regex after inspecting the committed source.
 - Updated the pilot instructions with identity flags and one-star derivation command.
 - These changes have been committed, but no Python execution, browser execution, or live Google Maps collection has yet been performed. They are code-level hardening only.
+
+
+## Android route added — 2026-11-06
+
+A second local collection interface has been added for the phone:
+- `tools/android_maps_collector.user.js` is a Violentmonkey userscript for Firefox Android.
+- `ANDROID_PILOT.md` documents installation and a manual Greenville test.
+- The panel requires the Greenville title/address/phone checks and a recognized Lowest-sort state before arming. It captures visible cards, deduplicates them in the current tab session, and exports raw JSONL, one-star JSONL, one-star CSV, and a manifest.
+- The manifest always says `complete: false`. The script does not upload data or call a paid service.
+- The script was code-reviewed and corrected for regular-expression escaping, mutation-observer recursion, and export-manifest wiring. It has **not** been run on a live Google Maps page or tested on the user's Android device.
+
+Mozilla's current Android add-on help documents installing compatible extensions through Firefox's Add-ons manager, and the Violentmonkey listing identifies Firefox for Android support. This makes the path technically plausible, not yet qualified for audit collection.
