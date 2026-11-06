@@ -45,7 +45,7 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             self.assertEqual(len(one), 3)
             self.assertEqual(manifest["counts"]["potential_duplicate_one_star"], 1)
             self.assertEqual(manifest["counts"]["one_star_unique_fingerprints"], 2)
-            self.assertEqual(manifest["counts"]["one_star_records_preserved"], 2)
+            self.assertEqual(manifest["counts"]["one_star_records_preserved"], 3)
             self.assertEqual(manifest["counts"]["unknown_rating"], 1)
             self.assertTrue(manifest["benchmark_count_match"])
             self.assertTrue(manifest["derived_subset_count_matches_bundle"])
@@ -65,7 +65,7 @@ class AndroidBundleProcessorTests(unittest.TestCase):
                 [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
                 check=True, capture_output=True, text=True,
             )
-            self.assertEqual(json.loads(result.stdout)["counts"]["one_star_unique"], 1)
+            self.assertEqual(json.loads(result.stdout)["counts"]["one_star_unique_fingerprints"], 1)
 
 
     def test_scroll_trace_is_summarized_without_claiming_completeness(self):
