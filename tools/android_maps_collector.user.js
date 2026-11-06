@@ -24,14 +24,7 @@
   const clean = value => String(value || "").replace(/\\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\\D/g, "");
   const norm = value => clean(value).toLowerCase();
-  const hash = value => {
-    let h = 2166136261;
-    for (let i = 0; i < value.length; i++) {
-      h ^= value.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return "local-" + (h >>> 0).toString(16);
-  };
+  const hash = value => "local-" + value;
 
   const panel = document.createElement("section");
   panel.id = "crmt-review-capture-panel";
@@ -57,6 +50,7 @@
       <button data-action="raw">Export raw JSONL</button>
       <button data-action="one">Export one-star JSONL</button>
       <button data-action="csv">Export one-star CSV</button>
+      <button data-action="manifest">Export manifest</button>
     </div>
     <div style="margin-top:7px;font-size:11px;opacity:.8">
       User-controlled pilot. Select Lowest in Google Maps first. This tool never claims complete history.
@@ -79,8 +73,9 @@
     const title = clean(document.querySelector("h1")?.innerText);
     const body = clean(document.body?.innerText);
     const titleOk = EXPECTED.titleTokens.every(t => norm(title).includes(norm(t)));
-    const addressOk = EXPECTED.address.split(/\\s+/).filter(x => x.length > 1)
-      .every(t => norm(body).includes(norm(t)));
+    const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
+    const addressOk = (EXPECTED.address.toLowerCase().match(/[a-z0-9]+/g) || [])
+      .filter(x => x.length > 1).every(t => bodyNormalized.includes(t));
     const phoneOk = digits(body).includes(digits(EXPECTED.phone));
     return { ok: titleOk && addressOk && phoneOk, title, titleOk, addressOk, phoneOk };
   }
@@ -137,6 +132,13 @@
     const visible = [...document.querySelectorAll("[data-review-id],.jftiEf")];
     let added = 0;
     for (const el of visible) {
+      for (const button of el.querySelectorAll("button,[role='button']")) {
+        const label = clean((button.getAttribute("aria-label") || "") + " " +
+          (button.innerText || button.textContent || ""));
+        if (/^more$/i.test(label)) {
+          try { button.click(); } catch (_) {}
+        }
+      }
       const row = extractCard(el);
       if (!cards.has(row.capture_key)) {
         cards.set(row.capture_key, row);
