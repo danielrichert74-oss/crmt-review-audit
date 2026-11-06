@@ -391,7 +391,14 @@
         (b.clientHeight * b.clientWidth) - (a.clientHeight * a.clientWidth));
       feed = candidates[0] || null;
     }
-    if (!feed) return status("Could not identify the review feed. No data was changed.");
+    if (!feed) {
+      autoStartedAt = new Date().toISOString();
+      autoFinishedAt = new Date().toISOString();
+      autoStopReason = "scroll-container-not-found";
+      autoBundleExported = false;
+      exportAuditBundle();
+      return status("Review cards were captured, but the scroll container could not be identified. A partial evidence bundle was downloaded.");
+    }
     autoIdle = 0;
     autoSteps = 0;
     autoStartedAt = new Date().toISOString();
