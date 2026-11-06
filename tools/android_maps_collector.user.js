@@ -102,6 +102,7 @@
       <button data-action="raw">Export raw JSONL</button>
       <button data-action="one">Export one-star JSONL</button>
       <button data-action="csv">Export one-star CSV</button>
+      <button data-action="bundle">Export full evidence bundle</button>
       <button data-action="manifest">Export manifest</button>
     </div>
     <div style="margin-top:7px;font-size:11px;opacity:.8">
@@ -680,6 +681,7 @@
     else if (action === "raw") { persistCards(); exportRaw(); }
     else if (action === "one") { persistCards(); exportOneStar(); }
     else if (action === "csv") { persistCards(); exportCsv(); }
+    else if (action === "bundle") { exportAuditBundle(); }
     else if (action === "manifest") {
       persistCards();
       const rows = [...cards.values()];
