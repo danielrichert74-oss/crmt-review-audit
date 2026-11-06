@@ -51,9 +51,9 @@ location without changing and reviewing those expected values.
 - The page's mobile DOM may differ from desktop, and Google may change selectors.
 - The script only captures review cards that become visible in the page. It
   cannot establish that all historical reviews were exposed.
-- The sort-state detector may not recognize every Google Maps UI version. If
-  it refuses to arm, do not bypass the gate by editing the code; inspect the
-  live UI and update the detector based on observed evidence.
+- The sort-state detector may not recognize every Google Maps UI version.
+  The separate manual confirmation button records that the user visually
+  selected Lowest; it is not represented as automatic DOM verification.
 - The capture is held in the current page session until exported. Do not reload
   or close the tab before exporting.
 - The manifest always records `complete: false`. Reconcile the captured count
