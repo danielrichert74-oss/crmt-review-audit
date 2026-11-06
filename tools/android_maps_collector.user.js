@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.4.0
+// @version      0.5.0
 // @description  Persistent, configurable capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -131,7 +131,7 @@
     const body = clean([bodyText, bodyContent, ariaText, documentTitle].join(" "));
     const identityText = clean([body, decodedUrl].join(" "));
     const title = h1Title || documentTitle;
-    const titleSources = norm([h1Title, documentTitle, ariaText, decodedUrl].join(" "))
+    const titleSources = norm([h1Title, documentTitle].join(" "))
       .replace(/[^a-z0-9]/g, "");
     const titleOk = EXPECTED.titleTokens.every(t => titleSources.includes(t));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
@@ -627,5 +627,23 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Pilot 0.3.0 loaded. Configure dealership if needed, then verify its Google Maps overview.");
+  status("Pilot 0.5.0 loaded. Waiting for the verified Greenville business profile.");
+
+  // Start automatically only when the selected page title itself identifies
+  // the expected dealership and the address + phone checks also pass.
+  let autoLaunchAttempts = 0;
+  let autoLaunchTimer = setInterval(() => {
+    autoLaunchAttempts++;
+    const identity = identityCheck();
+    if (identity.ok) {
+      clearInterval(autoLaunchTimer);
+      autoLaunchTimer = null;
+      status("Verified Greenville profile detected. Starting automatic audit…");
+      runUnsortedAudit();
+    } else if (autoLaunchAttempts >= 45) {
+      clearInterval(autoLaunchTimer);
+      autoLaunchTimer = null;
+      status("Automatic start not triggered. Open the verified Greenville business overview, or use RUN AUDIT.");
+    }
+  }, 1000);
 })();
