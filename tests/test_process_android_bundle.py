@@ -44,6 +44,8 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             self.assertEqual(manifest["counts"]["duplicate_one_star"], 1)
             self.assertEqual(manifest["counts"]["unknown_rating"], 1)
             self.assertTrue(manifest["benchmark_count_match"])
+            self.assertTrue(manifest["derived_subset_count_matches_bundle"])
+            self.assertTrue(manifest["bundle_subset_matches_raw_filter"])
             self.assertFalse(manifest["complete"])
 
     def test_rating_can_be_recovered_from_label(self):
