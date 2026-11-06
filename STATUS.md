@@ -95,3 +95,11 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 - Android extraction now also preserves the raw visible card text and includes a best-effort date fallback from the card's text when the dedicated date selector is absent. The one-star CSV includes that raw card text for review/quality control.
 - The business-continuity check was relaxed from exact heading equality to requiring the verified business name tokens remain visible somewhere in the current page/ARIA text; this accommodates the heading changing in the Reviews view while still disarming if the business identity disappears.
+
+
+## Offline verification — 2026-11-06
+
+- Executed the committed `filter_one_star.py` source in an isolated temporary directory. Python compilation passed.
+- Executed the committed `tests/test_filter_one_star.py` test contents against that source: 2 tests passed.
+- End-to-end sample: 5 valid raw records produced 2 unique one-star records; 1 duplicate one-star, 1 non-one-star, 1 unknown rating, and 1 malformed JSONL line were separately accounted for. The derived manifest remained `complete: false`.
+- This verifies the derived-filter logic only. It does not test the Playwright collector, the Android userscript in a browser, or live Google Maps extraction.
