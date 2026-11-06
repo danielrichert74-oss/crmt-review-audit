@@ -111,7 +111,7 @@
     const responseDate = response?.querySelector("[class*='date'],[class*='time'],[aria-label*='ago']");
     const author = el.querySelector('a[href*="/contrib/"]');
     const cardText = clean(el.innerText || el.textContent || "");
-    const dateMatch = cardText.match(/\\b(?:\\d+ (?:day|week|month|year)s? ago|\\w+ \\d{1,2}, \\d{4})\\b/i);
+    const dateMatch = cardText.match(/\b(?:\d+ (?:day|week|month|year)s? ago|\w+ \d{1,2}, \d{4})\b/i);
     const row = {
       review_id: el.getAttribute("data-review-id") || "",
       reviewer_name: get(".d4r55"),
