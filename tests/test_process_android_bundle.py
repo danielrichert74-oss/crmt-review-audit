@@ -95,5 +95,46 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             self.assertFalse(manifest["complete"])
 
 
+    def test_boolean_rating_is_not_one_star(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "bundle.json"
+            source.write_text(json.dumps({
+                "schema_version": "crmt-review-audit-bundle-1.0",
+                "raw_reviews": [
+                    {"review_id": "bool", "rating_value": True},
+                    {"review_id": "real", "rating_value": 1}
+                ]
+            }), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
+                check=True, capture_output=True, text=True,
+            )
+            manifest = json.loads(result.stdout)
+            one = [json.loads(line) for line in (root / "out" / "one_star_reviews.jsonl").read_text().splitlines()]
+            self.assertEqual([row["review_id"] for row in one], ["real"])
+            self.assertEqual(manifest["rating_distribution"]["1"], 1)
+            self.assertEqual(manifest["rating_distribution"]["unknown"], 1)
+
+    def test_trace_count_mismatch_is_flagged(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "bundle.json"
+            source.write_text(json.dumps({
+                "schema_version": "crmt-review-audit-bundle-1.0",
+                "raw_reviews": [],
+                "collection": {
+                    "scroll_trace_cycles_recorded": 9,
+                    "scroll_trace": [{"newly_captured": 0}]
+                }
+            }), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
+                check=True, capture_output=True, text=True,
+            )
+            manifest = json.loads(result.stdout)
+            self.assertTrue(manifest["integrity_warnings"])
+            self.assertFalse(manifest["complete"])
+
 if __name__ == "__main__":
     unittest.main()
