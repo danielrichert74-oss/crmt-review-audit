@@ -138,6 +138,12 @@
       status("Not armed. Verify the business identity and Lowest sort first.");
       return;
     }
+    const currentTitle = clean(document.querySelector("h1")?.innerText);
+    if (!verifiedIdentity || !currentTitle || norm(currentTitle) !== norm(verifiedIdentity.title)) {
+      armed = false;
+      status("STOP: the visible business title changed or disappeared. Re-verify the listing before continuing.");
+      return;
+    }
     const visible = [...document.querySelectorAll("[data-review-id],.jftiEf")];
     let added = 0;
     for (const el of visible) {
