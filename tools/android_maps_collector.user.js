@@ -346,7 +346,9 @@
       /!1s0x[0-9a-f]+:0x[0-9a-f]+/i.test(location.href);
   }
 
-  let lastReviewsControlDiagnostic = "";\n\n  function clickReviewsTab() {
+  let lastReviewsControlDiagnostic = "";
+
+  function clickReviewsTab() {
     // Never activate review links from search results. On a verified place
     // page, Maps may expose a tab, a rating/count button, or a same-place
     // reviews link depending on viewport and experiment cohort.
