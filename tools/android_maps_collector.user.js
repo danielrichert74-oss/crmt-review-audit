@@ -501,7 +501,7 @@
     a.href = url;
     a.download = filename;
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
   function exportAuditBundle() {
@@ -547,8 +547,8 @@
     };
     download("crmt-audit-bundle-" + Date.now() + ".json", JSON.stringify(bundle, null, 2), "application/json");
     autoBundleExported = true;
-    status("AUTO-COLLECT finished. Evidence bundle downloaded: " + rows.length +
-      " total reviews, " + oneStar.length + " one-star. Completeness remains unverified.");
+    status("Evidence bundle export requested: " + rows.length +
+      " total reviews, " + oneStar.length + " one-star. Check Downloads; if absent, tap Export full evidence bundle. Completeness remains unverified.");
   }
 
   function exportRaw() {
