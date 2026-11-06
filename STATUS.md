@@ -103,3 +103,7 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Executed the committed `tests/test_filter_one_star.py` test contents against that source: 2 tests passed.
 - End-to-end sample: 5 valid raw records produced 2 unique one-star records; 1 duplicate one-star, 1 non-one-star, 1 unknown rating, and 1 malformed JSONL line were separately accounted for. The derived manifest remained `complete: false`.
 - This verifies the derived-filter logic only. It does not test the Playwright collector, the Android userscript in a browser, or live Google Maps extraction.
+
+
+- Expanded Android manifest counters: non-one-star and unknown-rating counts, plus missing review ID, reviewer, date, and review-text counts. This makes visible-card extraction quality measurable instead of reporting only total and one-star counts.
+- Added an additional Google Maps hostname match for the Android userscript.
