@@ -98,9 +98,12 @@ Optional count comparison (a match is not proof of completeness):
 python tools/process_android_bundle.py --input crmt-audit-bundle.json --outdir output/greenville --benchmark-one-star-count 69
 ```
 
-The processor recomputes the one-star subset from raw reviews, preserves every raw row, deduplicates the derived one-star set, exports CSV/JSONL, hashes the source and outputs, and writes a manifest. It always records `complete: false`.
+The processor recomputes the one-star subset from raw reviews, preserves every raw row, preserves all derived one-star rows and flags possible duplicates without deleting them, exports CSV/JSONL, hashes the source and outputs, and writes a manifest. It always records `complete: false`.
 
 
 ### QA candidate 0.7.1
 
 This candidate fixes an asynchronous startup defect in the one-click run: the review-tab wait uses `await`, so its containing function is now explicitly async and both startup paths handle rejected startup safely. The processor also rejects boolean ratings, reports rating distribution, and flags trace/subset integrity mismatches. Source regression tests were added; run the repository test suite before using this build. This remains unqualified until the real Android/Google Maps acceptance run passes.
+
+
+**Evidence-preservation note (0.7.1 QA candidate):** When Google Maps omits a review ID, separate DOM card observations are retained even if their text matches. The processor flags matching fingerprints as possible duplicates but never removes them automatically. Use the panel's **Export full evidence bundle** action if automatic download does not appear; this is a single export action, not manual review copying.
