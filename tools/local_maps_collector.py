@@ -287,8 +287,8 @@ def main():
         address_verified = bool(address_tokens) and all(
             token in normalized_page_text for token in address_tokens
         )
-        expected_phone_digits = re.sub(r"\\D", "", args.expected_phone)
-        page_phone_digits = re.sub(r"\\D", "", page_text)
+        expected_phone_digits = re.sub(r"\D", "", args.expected_phone)
+        page_phone_digits = re.sub(r"\D", "", page_text)
         phone_verified = bool(expected_phone_digits) and expected_phone_digits in page_phone_digits
         identity_verified = (
             "carmart" in normalized_title and "greenville" in normalized_title
