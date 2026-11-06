@@ -320,7 +320,7 @@
     const target = candidates.find(node => {
       const label = clean((node.getAttribute("aria-label") || "") + " " +
         (node.innerText || node.textContent || ""));
-      return /^reviews(?:\s*\(?[\d,.kmb]+\)?)?$/i.test(label);
+      return /\breviews\b/i.test(label) && !/write a review|review this place/i.test(label);
     });
     if (!target) return false;
     try { target.click(); return true; } catch (_) { return false; }
