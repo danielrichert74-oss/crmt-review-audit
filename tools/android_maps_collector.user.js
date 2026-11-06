@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.4
+// @version      0.1.5
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -21,6 +21,7 @@
   let armed = false;
   let verifiedIdentity = null;
   let sortVerificationMethod = null;
+  let captureMode = null;
   let observer = null;
   let lastCapture = null;
 
@@ -57,6 +58,7 @@
       <button data-action="identity">Verify business</button>
       <button data-action="verify">Arm (Lowest detected)</button>
       <button data-action="manual">Arm (Lowest confirmed visually)</button>
+      <button data-action="unsorted">Arm (Unsorted visible reviews)</button>
       <button data-action="capture">Capture visible</button>
       <button data-action="scroll">Scroll feed once</button>
       <button data-action="raw">Export raw JSONL</button>
@@ -65,7 +67,7 @@
       <button data-action="manifest">Export manifest</button>
     </div>
     <div style="margin-top:7px;font-size:11px;opacity:.8">
-      User-controlled pilot. Select Lowest in Google Maps first. This tool never claims complete history.
+      User-controlled pilot. Use Lowest only when visibly selected; otherwise use Unsorted mode. Never claims complete history.
     </div>`;
   const styleButtons = () => panel.querySelectorAll("button").forEach(b => {
     b.style.cssText = "min-height:38px;padding:6px;border:1px solid #9ab;border-radius:7px;background:#e8f0f6;color:#102030;font-weight:600";
@@ -191,7 +193,7 @@
 
   function captureVisible() {
     if (!armed) {
-      status("Not armed. Verify the business identity and Lowest sort first.");
+      status("Not armed. Verify the business identity, then choose a capture mode.");
       return;
     }
     const currentTitle = clean(document.querySelector("h1")?.innerText);
@@ -339,6 +341,7 @@
       } else {
         armed = true;
         sortVerificationMethod = "dom-selected-state";
+        captureMode = "lowest";
         status("Armed for " + verifiedIdentity.title + ". Lowest sort state detected.");
         captureVisible();
       }
@@ -350,8 +353,22 @@
       } else {
         armed = true;
         sortVerificationMethod = "user-visually-confirmed";
+        captureMode = "lowest";
         status("Manually armed for " + verifiedIdentity.title +
           ". You confirmed Lowest is visibly selected. Capture and scroll carefully.");
+        captureVisible();
+      }
+    } else if (action === "unsorted") {
+      const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
+      if (!verifiedIdentity || !hasReviewCards) {
+        armed = false;
+        status("Unsorted arm refused: verify the business overview first and open Reviews.");
+      } else {
+        armed = true;
+        captureMode = "unfiltered-visible";
+        sortVerificationMethod = null;
+        status("Armed for " + verifiedIdentity.title +
+          ". Capturing visible reviews without a verified sort. One-star rows will be filtered in export.");
         captureVisible();
       }
     } else if (action === "capture") captureVisible();
@@ -369,8 +386,10 @@
           listing_url_at_verification: identity?.listing_url_at_verification || "",
           listing_url_at_export: location.href,
           identity_checks: identity,
-          lowest_selected_at_arm: Boolean(sortVerificationMethod),
+          lowest_selected_at_arm: captureMode === "lowest" && Boolean(sortVerificationMethod),
           lowest_verification_method: sortVerificationMethod,
+          capture_mode: captureMode || "not-armed",
+          sort_state: captureMode === "lowest" ? "lowest-confirmed" : captureMode === "unfiltered-visible" ? "unverified-or-default-sort" : "not-captured",
           raw_cards_captured: rows.length,
           one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
           non_one_star_cards_captured: rows.filter(x => x.rating_value !== null && x.rating_value !== 1).length,
