@@ -18,6 +18,7 @@
   };
   const cards = new Map();
   let armed = false;
+  let sortVerificationMethod = null;
   let observer = null;
   let lastCapture = null;
 
@@ -45,6 +46,7 @@
     <div data-count style="margin:6px 0">0 captured · 0 one-star</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <button data-action="verify">Verify & arm</button>
+      <button data-action="manual">Confirm Lowest visually</button>
       <button data-action="capture">Capture visible</button>
       <button data-action="scroll">Scroll feed once</button>
       <button data-action="raw">Export raw JSONL</button>
@@ -241,7 +243,20 @@
         status("Identity matched (" + identity.title + "). Select Lowest in Reviews, then tap Verify & arm again.");
       } else {
         armed = true;
-        status("Armed for " + identity.title + ". Capture visible cards and scroll the review feed.");
+        sortVerificationMethod = "dom-selected-state";
+        status("Armed for " + identity.title + ". Lowest sort state detected.");
+        captureVisible();
+      }
+    } else if (action === "manual") {
+      const identity = identityCheck();
+      const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
+      if (!identity.ok || !hasReviewCards) {
+        armed = false;
+        status("Manual arm refused: verify the exact business profile and open Reviews first.");
+      } else {
+        armed = true;
+        sortVerificationMethod = "user-visually-confirmed";
+        status("Manually armed. You confirmed Lowest is visibly selected. Capture and scroll carefully.");
         captureVisible();
       }
     } else if (action === "capture") captureVisible();
@@ -256,7 +271,9 @@
         JSON.stringify({
           created_at_utc: new Date().toISOString(),
           listing_title: identity.title, listing_url: location.href,
-          identity_checks: identity, lowest_selected_at_arm: true,
+          identity_checks: identity,
+          lowest_selected_at_arm: true,
+          lowest_verification_method: sortVerificationMethod,
           raw_cards_captured: rows.length,
           one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
           last_capture_at_utc: lastCapture, complete: false,
