@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.7
+// @version      0.7.8
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -58,6 +58,7 @@
   let autoStopReason = "not-started";
   let autoBundleExported = false;
   let autoFeedInfo = null;
+  let lastCaptureDiagnostics = null;
   let autoTrace = [];
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
@@ -218,7 +219,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.7",
+      collector: "review-audit-tool-android-0.7.8",
       card_text: cardText
     };
     const keyMaterial = [
@@ -270,7 +271,13 @@
       return;
     }
     const visible = [...document.querySelectorAll("[data-review-id],.jftiEf")];
+    const idSet = new Set(visible.map(el => el.getAttribute("data-review-id") || "").filter(Boolean));
+    const classOnly = visible.filter(el => el.matches(".jftiEf") && !el.hasAttribute("data-review-id"));
     let added = 0;
+    let duplicateNodes = 0;
+    let withReviewer = 0;
+    let withRating = 0;
+    let withText = 0;
     for (const el of visible) {
       for (const button of el.querySelectorAll("button,[role='button']")) {
         const label = clean((button.getAttribute("aria-label") || "") + " " +
@@ -280,15 +287,30 @@
         }
       }
       const row = extractCard(el);
+      if (row.reviewer_name) withReviewer++;
+      if (row.rating_value !== null) withRating++;
+      if (row.review_text) withText++;
       if (!cards.has(row.capture_key)) {
         cards.set(row.capture_key, row);
         added++;
+      } else {
+        duplicateNodes++;
       }
     }
+    lastCaptureDiagnostics = {
+      matched_nodes: visible.length,
+      nodes_with_review_id: visible.filter(el => Boolean(el.getAttribute("data-review-id"))).length,
+      nodes_without_review_id: classOnly.length,
+      unique_review_ids: idSet.size,
+      nodes_with_reviewer: withReviewer,
+      nodes_with_rating: withRating,
+      nodes_with_text: withText,
+      duplicate_nodes: duplicateNodes
+    };
     lastCapture = new Date().toISOString();
     updateCount();
     if (added) persistCards();
-    status("Captured " + added + " new card(s); " + visible.length + " currently visible." + storageWarning);
+    status("Captured " + added + " new card(s); " + visible.length + " matched nodes / " + idSet.size + " unique Google IDs; " + withRating + " rated, " + withReviewer + " with reviewer names." + storageWarning);
   }
 
   function scrollOnce() {
@@ -552,7 +574,7 @@
       const afterTop = feed.scrollTop;
       const afterHeight = feed.scrollHeight;
       const afterVisible = feed.querySelectorAll("[data-review-id],.jftiEf").length;
-      autoTrace.push({cycle:autoSteps,at_utc:new Date().toISOString(),captured_total:cards.size,newly_captured:added,visible_cards_before_scroll:beforeVisible,visible_cards_after_scroll:afterVisible,scroll_top_before:Math.round(beforeTop),scroll_top_after:Math.round(afterTop),scroll_height_before:Math.round(beforeHeight),scroll_height_after:Math.round(afterHeight),client_height:Math.round(feed.clientHeight),at_bottom_after_scroll:afterTop>=Math.max(0,afterHeight-feed.clientHeight)-5});
+      autoTrace.push({cycle:autoSteps,at_utc:new Date().toISOString(),captured_total:cards.size,newly_captured:added,visible_cards_before_scroll:beforeVisible,visible_cards_after_scroll:afterVisible,capture_diagnostics:lastCaptureDiagnostics,scroll_top_before:Math.round(beforeTop),scroll_top_after:Math.round(afterTop),scroll_height_before:Math.round(beforeHeight),scroll_height_after:Math.round(afterHeight),client_height:Math.round(feed.clientHeight),at_bottom_after_scroll:afterTop>=Math.max(0,afterHeight-feed.clientHeight)-5});
       if (autoTrace.length > 600) autoTrace.shift();
       if (added > 0 || afterTop > beforeTop || afterHeight > beforeHeight) autoIdle = 0;
       else autoIdle++;
@@ -591,7 +613,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.7",
+        collector: "review-audit-tool-android-0.7.8",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
