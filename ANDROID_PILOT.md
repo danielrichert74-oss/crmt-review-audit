@@ -39,11 +39,12 @@ The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
 30, Greenville, TX 75402, phone 903-458-9900. Do not use this build for another
 location without changing and reviewing those expected values.
 
-### One-click unsorted run (v0.4.0)
+### Automatic unsorted run (v0.5.0)
 
-From the dealership overview page, tap **RUN AUDIT (all reviews)**. The script
-checks the dealership name/address/phone, opens the Reviews tab, waits for review
-cards, then scrolls and captures the rendered feed automatically. It does not
+Open the Greenville dealership overview page in Firefox. Once the script detects
+the exact profile title plus matching address and phone, it starts automatically:
+it opens the Reviews tab, waits for review cards, then scrolls and captures the
+rendered feed. If automatic start does not trigger, tap **RUN AUDIT (all reviews)**. It does not
 require the Lowest sort control, which was missing in the prior mobile UI
 attempt. The one-star set is derived from all captured ratings after collection.
 
