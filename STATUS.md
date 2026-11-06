@@ -162,3 +162,11 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - The exported evidence bundle records the selected feed-detection method, candidate count, role, class name, and initial scroll dimensions. This makes a failed or suspicious traversal diagnosable from the evidence file rather than relying on screenshots or manual review copying.
 - JavaScript syntax parsing and static acceptance checks passed after the change.
 - No live Google Maps or Android-device test has been performed. The change improves the candidate's logic but does not establish that the current Maps mobile DOM will expose a usable feed.
+
+
+## Lowest-sort false-positive correction — 2026-11-06
+
+- Tightened machine verification for the legacy Lowest-sort mode. A button label that merely contains the word "Lowest" is no longer accepted as proof that Lowest is selected; the collector now requires an explicit selected-state signal on the Lowest option.
+- This prevents a menu action label from being mistaken for an applied sort state. The separate user-visually-confirmed mode remains available and is explicitly labeled in the evidence.
+- JavaScript syntax parsing passed. Static acceptance checks passed for all three collection paths (automatic unsorted, explicit unsorted, machine-detected Lowest, and user-confirmed Lowest), feed traversal/safety stops, automatic/partial bundle export, raw preservation, one-star derivation, identity gate, and incomplete-coverage flag (15/15 checks).
+- These are code/static checks, not live Google Maps DOM tests. No live-device qualification is claimed.
