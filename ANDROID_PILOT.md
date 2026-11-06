@@ -89,3 +89,20 @@ Firefox and the Violentmonkey add-on are free to install. The script itself
 uses no paid API or metered browser service. Review data stays in the page's
 in-memory session until the user explicitly downloads an export. The extension
 does request permission to access website content so it can run on Google Maps.
+
+
+### Process the downloaded bundle
+
+After the Android collector downloads `crmt-audit-bundle-*.json`, copy it to a computer and run:
+
+```bash
+python tools/process_android_bundle.py --input crmt-audit-bundle.json --outdir output/greenville
+```
+
+Optional count comparison (a match is not proof of completeness):
+
+```bash
+python tools/process_android_bundle.py --input crmt-audit-bundle.json --outdir output/greenville --benchmark-one-star-count 69
+```
+
+The processor recomputes the one-star subset from raw reviews, preserves every raw row, deduplicates the derived one-star set, exports CSV/JSONL, hashes the source and outputs, and writes a manifest. It always records `complete: false`.
