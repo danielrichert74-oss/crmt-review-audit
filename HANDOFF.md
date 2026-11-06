@@ -70,3 +70,10 @@ This tool collects and analyzes public review evidence; review allegations are n
 
 ## Resume instruction
 At the start of a new session, read this file first, then fetch the current userscript, processor, tests, README, and STATUS. Continue at Resume plan. Do not ask the user to restate the project or repeat retired experiments. Do not claim live qualification without fresh evidence.
+
+
+## Evidence preservation and Android download fallback
+- v0.7.1 now retains separate DOM-node observations when Google Maps omits a stable review ID. Each such observation carries a content fingerprint for later reconciliation.
+- The processor preserves all observed one-star rows. Matching Google review IDs/content fingerprints are reported as potential duplicates; they are not silently removed because matching content can represent distinct genuine reviews.
+- A dedicated **Export full evidence bundle** panel action is available as a direct user-gesture download fallback.
+- New tests cover repeated review IDs and distinct review IDs with identical text. Execute the complete suite in a local checkout before promoting the candidate.
