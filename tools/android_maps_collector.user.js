@@ -564,7 +564,10 @@
     if (!button) return;
     const action = button.dataset.action;
     if (action === "run") {
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (action === "hide") {
       panel.style.width = "42px";
       panel.style.height = "42px";
