@@ -21,15 +21,24 @@ jobs:
           python src/process_gosom_output.py --prepare-input .tmp/greenville-url.txt
           echo "Prepared exact business query:"
           cat .tmp/greenville-url.txt
-      - name: Run pinned open-source scraper
+      - name: Build scraper with upstream DOM-pagination fix
         env:
           DISABLE_TELEMETRY: "1"
         run: |
-          docker pull gosom/google-maps-scraper:v1.18.1
+          git clone https://github.com/gosom/google-maps-scraper.git .tmp/gosom-src
+          git -C .tmp/gosom-src fetch origin refs/pull/334/head
+          git -C .tmp/gosom-src checkout --detach 42a4f6850d066116b47e44d303a3a0ec010fa319
+          echo "Building reviewed upstream PR commit:"
+          git -C .tmp/gosom-src rev-parse HEAD
+          docker build -t crmt-gosom-scraper:pr334 .tmp/gosom-src
+      - name: Run patched open-source scraper
+        env:
+          DISABLE_TELEMETRY: "1"
+        run: |
           docker run --rm \
             -e DISABLE_TELEMETRY=1 \
             -v "${GITHUB_WORKSPACE}:/work" \
-            gosom/google-maps-scraper:v1.18.1 \
+            crmt-gosom-scraper:pr334 \
             -input /work/.tmp/greenville-url.txt \
             -results /work/output/raw-scraper-output.jsonl \
             -json \
