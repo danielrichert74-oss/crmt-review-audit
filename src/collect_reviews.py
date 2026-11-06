@@ -23,6 +23,12 @@ def main():
     try:
         r=s.post(BASE+"/search",json={"query":query,"location":location,"country":"us"},timeout=60); r.raise_for_status()
         candidates=(r.json().get("data") or {}).get("results") or []
+    except requests.HTTPError as e:
+        resp=e.response
+        detail=(resp.text[:2000] if resp is not None else repr(e))
+        rid=(resp.headers.get("X-Request-ID") if resp is not None else None)
+        candidates=[]
+        errors.append("Maps search HTTP failure: status="+str(resp.status_code if resp is not None else "unknown")+" request_id="+str(rid)+" body="+detail)
     except Exception as e: candidates=[]; errors.append("Maps search: "+repr(e))
     phone=norm(expected["phone"]); matches=[]
     for c in candidates:
