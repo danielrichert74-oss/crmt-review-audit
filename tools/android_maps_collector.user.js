@@ -401,6 +401,14 @@
     };
   }
 
+  function mapsPageText() {
+    // Exclude our own panel: its labels contain "Lowest" and "reviews".
+    // Those words must never satisfy Google's review-list readiness checks.
+    const page = document.body?.cloneNode(true);
+    page?.querySelector("#crmt-review-capture-panel")?.remove();
+    return clean(page?.innerText || page?.textContent || "");
+  }
+
   function isPlaceDetailPage() {
     return /\/maps\/place\//i.test(location.pathname) ||
       /!1s0x[0-9a-f]+:0x[0-9a-f]+/i.test(location.href);
@@ -494,7 +502,7 @@
     // DOM review nodes can exist in the business overview as hidden preview
     // cards. Their presence does NOT prove the full Reviews list is open.
     // Only skip navigation when the page visibly exposes review-list sorting.
-    const pageTextBeforeOpen = clean(document.body?.innerText || "");
+    const pageTextBeforeOpen = mapsPageText();
     const reviewListAlreadyOpen =
       /(?:sort by|most relevant|newest|lowest)/i.test(pageTextBeforeOpen) &&
       Boolean(document.querySelector("[data-review-id],.jftiEf"));
@@ -505,7 +513,7 @@
     }
     let foundCards = false;
     for (let attempt = 0; attempt < 90; attempt++) {
-      const pageText = clean(document.body?.innerText || "");
+      const pageText = mapsPageText();
       const listReady =
         /(?:sort by|most relevant|newest|lowest)/i.test(pageText) ||
         /\/reviews\b/i.test(location.pathname);
