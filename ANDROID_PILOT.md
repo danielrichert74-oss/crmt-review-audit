@@ -29,10 +29,9 @@ Files:
 ## Greenville pilot
 
 1. Open the Google Maps business overview for CAR-MART of Greenville, Texas.
-2. Confirm the profile is the Greenville dealership.
-3. Tap **RUN AUDIT (all reviews)** in the CRMT panel.
-4. Keep Firefox on the listing while the collector opens Reviews, captures visible cards, scrolls the feed, and waits for the feed to stop yielding new cards.
-5. When the collector stops, it automatically downloads one JSON evidence bundle. Preserve that original file unchanged.
+2. The userscript waits for the exact profile title, address, and phone checks, then starts automatically. If it does not start, tap **RUN AUDIT (all reviews)**.
+3. Keep Firefox on the listing while the collector opens Reviews, captures visible cards, and scrolls the feed.
+4. When collection stops, preserve the automatically downloaded JSON evidence bundle unchanged.
 
 The one-click route deliberately captures the default/unsorted review feed. It does not depend on a Lowest sort control, which was missing in the mobile interface. The processor derives one-star records from the captured raw cards afterward.
 The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
@@ -44,9 +43,9 @@ location without changing and reviewing those expected values.
 Open the Greenville dealership overview page in Firefox. Once the script detects
 the exact profile title plus matching address and phone, it starts automatically:
 it opens the Reviews tab, waits for review cards, then scrolls and captures the
-rendered feed. If automatic start does not trigger, tap **RUN AUDIT (all reviews)**. It does not
-require the Lowest sort control, which was missing in the prior mobile UI
-attempt. The one-star set is derived from all captured ratings after collection.
+rendered feed. If automatic start does not trigger, tap **RUN AUDIT (all reviews)**. The route
+does not require the Lowest sort control, which was missing in the prior mobile
+UI attempt. The one-star set is derived from all captured ratings after collection.
 
 When the feed appears exhausted (or collection is manually stopped), the script
 automatically downloads one JSON evidence bundle containing raw reviews, the
