@@ -2,34 +2,37 @@
 
 A zero-cost-first, evidence-preserving collector for public Google Maps reviews of America's Car-Mart dealerships. Scope: Oklahoma, Missouri, Texas and Kentucky. Greenville, Texas is the pilot.
 
-## Current pilot design
+## Current collection design
 
-The GitHub Actions workflow automatically:
-1. Searches Google Maps through Stophy for America's Car-Mart in Greenville, TX.
-2. Matches the listing against the official dealership details (name/location and phone 903-458-9900).
-3. Stops without requesting reviews unless exactly one candidate matches.
-4. Requests the first reviews page sorted by lowest and locally retains only rating = 1.
-5. Saves review text, reviewer, date, review URL, owner reply/date, resolved listing details, and a run manifest as a GitHub Actions artifact.
+The primary pilot now uses the open-source [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper), not Stophy or TinyFish.
 
-No Place ID needs to be manually supplied. No TinyFish or Google API key is used.
+1. Read the Greenville dealership's official Google Maps listing URL from `data/dealerships.csv`.
+2. Pass that exact listing URL directly to the scraper. The upstream project explicitly supports Google Maps place URLs as input, avoiding broad business searches.
+3. Request extended review extraction (upstream documents approximately 300 reviews per place).
+4. Verify the returned business against Greenville's phone number, or its business name and street address.
+5. Retain only records with a one-star rating. Non-one-star reviews are discarded from the audit outputs.
+6. Preserve review text, reviewer name/profile, date, review ID, listing URL, and owner response/date when present.
+7. Compare the captured one-star count with Google's per-rating count and mark completeness only when the counts match.
 
 ## $0 guardrails
 
+- The scraper is MIT-licensed open-source software and runs on a GitHub-hosted Actions runner.
 - No paid services, paid credits, card trials, or automatic top-ups.
-- The workflow makes only the first-page keyless Stophy Maps Search call and first-page keyless Reviews call for the pilot. Both are documented as free within Stophy's no-key daily limit. It does not paginate.
-- Additional pages require a Stophy API key and consume credits. Do not add a key or increase page count without an explicit decision to do so.
-- The workflow is not scheduled. It can be run manually from GitHub Actions; a change to `data/run-pilot.txt` is also configured as a one-time push trigger.
-- Do not commit collected review data to the repository; output is uploaded as an Actions artifact.
-- Do not use review aggregators. Keep allegations as allegations; collection does not verify claims.
+- No proxy purchase, paid API, or secret key is configured.
+- The workflow is manual / test-triggered only; it is not scheduled.
+- Raw mixed-rating scraper output is removed after filtering. The uploaded artifact contains only the one-star audit records and the manifest.
+- Upstream extraction is documented as up to approximately 300 reviews per place. If the captured one-star count does not match Google's per-rating count, the manifest marks coverage incomplete.
+- The upstream review schema does not currently expose an individual review permalink; review ID and reviewer profile URL are retained instead.
+- Do not use review aggregators. Treat allegations as allegations; collection does not independently verify them.
 
 ## Run
 
-Open the repository's **Actions** tab and select **Greenville pilot - Stophy reviews**. If GitHub asks to enable Actions, enable it, then run the workflow. No inputs or secrets are required for the first-page pilot.
+Open the repository's **Actions** tab and select **Greenville pilot - gosom Google Maps scraper**. Run it manually. No secrets or paid services are required.
 
 ## Output
 
-- `output/reviews.jsonl`: one record per one-star review
+- `output/reviews.jsonl`: one record per verified one-star review
 - `output/reviews.csv`: tabular one-star records
-- `output/run_manifest.json`: resolved listing, page counts, errors, pagination status and limitations
+- `output/run_manifest.json`: listing identity, source counts, captured counts, completeness assessment and limitations
 
-A one-page run is explicitly incomplete if Stophy returns a cursor. Do not claim comprehensive coverage until all pages are collected and the manifest confirms pagination exhaustion.
+Do not claim comprehensive coverage until the manifest confirms the captured one-star count matches Google's per-rating listing count. Expand to other dealerships only after the Greenville pilot passes verification.
