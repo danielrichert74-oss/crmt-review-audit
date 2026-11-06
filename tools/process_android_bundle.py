@@ -53,6 +53,9 @@ def rating_value(row: dict[str, Any]) -> int | None:
         import re
         match = re.search(r"([1-5](?:\.0+)?)\s*star", label, re.I)
         value = match.group(1) if match else None
+    # bool subclasses int in Python; it is not a valid star rating.
+    if isinstance(value, bool):
+        return None
     try:
         numeric = float(value)
     except (TypeError, ValueError):
@@ -153,6 +156,18 @@ def main() -> None:
         supplied_subset_matches = sorted(record_key(row) for row in supplied_subset) == sorted(
             record_key(row) for row in one_star_all
         )
+    rating_distribution = {
+        str(star): sum(row["rating_value"] == star for row in normalized)
+        for star in range(1, 6)
+    }
+    rating_distribution["unknown"] = sum(row["rating_value"] is None for row in normalized)
+    trace_summary = summarize_scroll_trace(collection)
+    integrity_warnings = []
+    declared_trace_count = collection.get("scroll_trace_cycles_recorded")
+    if declared_trace_count is not None and declared_trace_count != trace_summary["trace_cycles_valid"]:
+        integrity_warnings.append("Declared trace cycle count differs from valid trace objects.")
+    if isinstance(supplied_subset, list) and supplied_subset_matches is False:
+        integrity_warnings.append("Supplied one-star subset differs from independent raw-card derivation.")
     counts = Counter({
         "raw_cards": len(normalized),
         "one_star_before_deduplication": len(one_star_all),
@@ -173,7 +188,9 @@ def main() -> None:
         "schema_version": bundle.get("schema_version"),
         "listing": listing,
         "collection": collection,
-        "scroll_trace_summary": summarize_scroll_trace(collection),
+        "scroll_trace_summary": trace_summary,
+        "rating_distribution": rating_distribution,
+        "integrity_warnings": integrity_warnings,
         "counts": dict(counts),
         "supplied_one_star_subset_count": supplied_subset_count,
         "derived_subset_count_matches_bundle": (
