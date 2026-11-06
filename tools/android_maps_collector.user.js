@@ -51,6 +51,9 @@
   let autoTimer = null;
   let autoIdle = 0;
   let autoSteps = 0;
+  let autoStartedAt = null;
+  let autoFinishedAt = null;
+  let autoStopReason = "not-started";
 
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
@@ -82,6 +85,7 @@
     <div data-status style="margin:8px 0">Waiting for a Google Maps business profile.</div>
     <div data-count style="margin:6px 0">0 captured · 0 one-star</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <button data-action="run">RUN AUDIT (all reviews)</button>
       <button data-action="identity">Verify business</button>
       <button data-action="configure">Configure dealership</button>
       <button data-action="verify">Arm (Lowest detected)</button>
@@ -290,7 +294,72 @@
   function stopAuto(message) {
     if (autoTimer) clearInterval(autoTimer);
     autoTimer = null;
+    autoFinishedAt = new Date().toISOString();
+    autoStopReason = message || "stopped-by-user";
     status(message || ("Auto-collect stopped. " + cards.size + " unique reviews captured."));
+  }
+
+  function restoreVerifiedListing(identity) {
+    const nextStorageKey = "crmt-review-capture-" + hash(location.href.split("?")[0]).slice(6) + "-v1";
+    if (nextStorageKey !== storageKey) {
+      storageKey = nextStorageKey;
+      restoreCards();
+    }
+    verifiedIdentity = {
+      ...identity,
+      verified_at_utc: new Date().toISOString(),
+      listing_url_at_verification: location.href
+    };
+  }
+
+  function clickReviewsTab() {
+    const candidates = [...document.querySelectorAll('button,[role="tab"],[role="button"],a')];
+    const target = candidates.find(node => {
+      const label = clean((node.getAttribute("aria-label") || "") + " " +
+        (node.innerText || node.textContent || ""));
+      return /^reviews(?:\s*\(?[\d,.kmb]+\)?)?$/i.test(label);
+    });
+    if (!target) return false;
+    try { target.click(); return true; } catch (_) { return false; }
+  }
+
+  async function runUnsortedAudit() {
+    stopAuto("Preparing one-click audit…");
+    const identity = identityCheck();
+    if (!identity.ok) {
+      verifiedIdentity = null;
+      armed = false;
+      status("AUDIT STOPPED — dealership identity did not pass. title:" +
+        identity.titleOk + ", address:" + identity.addressOk +
+        ", phone:" + identity.phoneOk + ". " +
+        JSON.stringify(identity.diagnostic));
+      return;
+    }
+    restoreVerifiedListing(identity);
+    status("Dealership identity verified. Opening Google Reviews…");
+    const alreadyHasCards = Boolean(document.querySelector("[data-review-id],.jftiEf"));
+    if (!alreadyHasCards && !clickReviewsTab()) {
+      status("Identity verified, but Google did not expose a Reviews tab to open. No collection started.");
+      return;
+    }
+    let foundCards = false;
+    for (let attempt = 0; attempt < 24; attempt++) {
+      if (document.querySelector("[data-review-id],.jftiEf")) {
+        foundCards = true;
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    if (!foundCards) {
+      status("Identity verified, but no review cards appeared within 12 seconds. No collection started.");
+      return;
+    }
+    armed = true;
+    captureMode = "unfiltered-visible";
+    sortVerificationMethod = null;
+    status("Collecting all visible ratings without relying on the missing Lowest control. One-star records will be derived after capture.");
+    captureVisible();
+    autoCollect();
   }
 
   function autoCollect() {
@@ -308,6 +377,9 @@
     if (!feed) return status("Could not identify the review feed. No data was changed.");
     autoIdle = 0;
     autoSteps = 0;
+    autoStartedAt = new Date().toISOString();
+    autoFinishedAt = null;
+    autoStopReason = "running";
     status("AUTO-COLLECT running. Keep this tab open; do not navigate away.");
     autoTimer = setInterval(() => {
       if (!armed || !document.body.contains(feed)) return stopAuto("Stopped: review feed or capture state changed.");
@@ -377,7 +449,9 @@
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
-    if (action === "hide") {
+    if (action === "run") {
+      runUnsortedAudit();
+    } else if (action === "hide") {
       panel.style.width = "42px";
       panel.style.height = "42px";
       panel.style.overflow = "hidden";
@@ -483,6 +557,10 @@
           capture_mode: captureMode || "not-armed",
           sort_state: captureMode === "lowest" ? "lowest-confirmed" : captureMode === "unfiltered-visible" ? "unverified-or-default-sort" : "not-captured",
           raw_cards_captured: rows.length,
+          auto_collection_started_at_utc: autoStartedAt,
+          auto_collection_finished_at_utc: autoFinishedAt,
+          auto_collection_stop_reason: autoStopReason,
+          auto_collection_scroll_cycles: autoSteps,
           one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
           non_one_star_cards_captured: rows.filter(x => x.rating_value !== null && x.rating_value !== 1).length,
           unknown_rating_cards_captured: rows.filter(x => x.rating_value === null).length,
