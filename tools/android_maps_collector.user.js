@@ -26,7 +26,14 @@
   const clean = value => String(value || "").replace(/\s+/g, " ").trim();
   const digits = value => String(value || "").replace(/\D/g, "");
   const norm = value => clean(value).toLowerCase();
-  const hash = value => "local-" + value;
+  const hash = value => {
+    let h = 14695981039346656037n;
+    for (let i = 0; i < value.length; i++) {
+      h ^= BigInt(value.charCodeAt(i));
+      h = BigInt.asUintN(64, h * 1099511628211n);
+    }
+    return "local-" + h.toString(16);
+  };
 
   const panel = document.createElement("section");
   panel.id = "crmt-review-capture-panel";
