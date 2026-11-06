@@ -60,3 +60,13 @@ No paid APIs, paid credits, subscriptions, proxies, card trials, or billing-enab
 - Tightened sort qualification: the collector now selects Lowest, reopens the sort menu, and requires an explicit selected-state signal (`aria-checked`, `aria-selected`, or `data-selected`) before it will collect. The evidence or failure reason is recorded in the manifest. This is intentionally fail-closed and may need adjustment if Google's live DOM exposes a different signal.
 - Corrected the exact-text Lowest selector after reviewing the committed source.
 - Still no runtime or live-browser test: no Actions run was launched because the repository's remaining free compute allowance is unknown, and the $0 rule prohibits risking billable usage. TinyFish browser automation is also metered, so it was not used.
+
+
+## Collector hardening pass — 2026-11-06
+
+- Added a stricter Greenville identity gate: the selected profile title must contain CAR-MART and Greenville, the visible page text must contain every token from the expected street address, and the expected phone digits must appear. The manifest records each check separately. This is still a UI-text match, not independent proof of the underlying listing identity; inspect the opened profile during the pilot.
+- Added a best-effort click on card-local "More" controls before extracting review text, and a best-effort owner-response date field. Google UI selectors may change and these fields require live validation.
+- Added `tools/filter_one_star.py`, a non-destructive derivation step that preserves the raw mixed-rating JSONL, deduplicates one-star rows, exports JSONL and CSV, and separately counts unknown ratings, invalid ratings, duplicates, and malformed lines.
+- Corrected the expected-phone digit-normalization regex after inspecting the committed source.
+- Updated the pilot instructions with identity flags and one-star derivation command.
+- These changes have been committed, but no Python execution, browser execution, or live Google Maps collection has yet been performed. They are code-level hardening only.
