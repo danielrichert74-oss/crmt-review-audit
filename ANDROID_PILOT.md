@@ -49,6 +49,8 @@ location without changing and reviewing those expected values.
 - This is a prototype. It has not been tested on a live Google Maps page or
   on the user's Android device.
 - The page's mobile DOM may differ from desktop, and Google may change selectors.
+- Identity verification must be performed on the business overview before
+  opening Reviews because the review view may hide address/contact metadata.
 - The script only captures review cards that become visible in the page. It
   cannot establish that all historical reviews were exposed.
 - The sort-state detector may not recognize every Google Maps UI version.
