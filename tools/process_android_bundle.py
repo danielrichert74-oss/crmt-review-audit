@@ -51,7 +51,7 @@ def rating_value(row: dict[str, Any]) -> int | None:
     if value is None:
         label = str(row.get("rating_label") or "")
         import re
-        match = re.search(r"([1-5](?:\\.0+)?)\\s*star", label, re.I)
+        match = re.search(r"([1-5](?:\.0+)?)\s*star", label, re.I)
         value = match.group(1) if match else None
     try:
         numeric = float(value)
@@ -65,7 +65,7 @@ def rating_value(row: dict[str, Any]) -> int | None:
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as stream:
         for row in rows:
-            stream.write(json.dumps(row, ensure_ascii=False) + "\\n")
+            stream.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def main() -> None:
