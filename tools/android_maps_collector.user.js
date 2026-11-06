@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.0
+// @version      0.7.1
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -215,7 +215,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "crmt-android-userscript-pilot",
+      collector: "review-audit-tool-android-0.7.1",
       card_text: cardText
     };
     const keyMaterial = [
@@ -495,7 +495,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.0",
+        collector: "review-audit-tool-android-0.7.1",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -693,7 +693,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Pilot 0.6.0 loaded. Waiting for the verified Greenville business profile.");
+  status("Review Audit Tool 0.7.1 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
