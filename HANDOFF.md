@@ -11,7 +11,7 @@ Qualification pilot: Car-Mart of Greenville, Texas.
 This tool collects and analyzes public review evidence; review allegations are not independently verified facts and do not alone prove corporate liability.
 
 ## Current components
-- Android collector: `tools/android_maps_collector.user.js`, v0.7.1.
+- Android collector: `tools/android_maps_collector.user.js`, v0.7.2.
 - Processor: `tools/process_android_bundle.py`.
 - Existing filter: `tools/filter_one_star.py`.
 - Android guide: `ANDROID_PILOT.md`.
@@ -44,7 +44,7 @@ This tool collects and analyzes public review evidence; review allegations are n
 ## QA branch changes — 2026-11-06
 - Branch: `qa-hardening-2026-11-06`.
 - Fixed a blocking JavaScript syntax defect: `runUnsortedAudit` contained `await` but was not declared `async`. Both automatic and manual startup paths now catch startup rejections and fail safely.
-- Runtime banner and evidence collector identifier now consistently report v0.7.1.
+- Runtime banner and evidence collector identifier now consistently report v0.7.2.
 - Processor rejects boolean star ratings, reports a five-star/unknown distribution, and flags declared-vs-valid trace-count mismatches and supplied-subset disagreement.
 - Added source regression checks for async declaration, version alignment, and both guarded startup paths, plus processor fixtures for boolean ratings and trace integrity.
 
@@ -73,7 +73,7 @@ At the start of a new session, read this file first, then fetch the current user
 
 
 ## Evidence preservation and Android download fallback
-- v0.7.1 now retains separate DOM-node observations when Google Maps omits a stable review ID. Each such observation carries a content fingerprint for later reconciliation.
+- v0.7.2 now retains separate DOM-node observations when Google Maps omits a stable review ID. Each such observation carries a content fingerprint for later reconciliation.
 - The processor preserves all observed one-star rows. Matching Google review IDs/content fingerprints are reported as potential duplicates; they are not silently removed because matching content can represent distinct genuine reviews.
 - A dedicated **Export full evidence bundle** panel action is available as a direct user-gesture download fallback.
 - New tests cover repeated review IDs and distinct review IDs with identical text. Execute the complete suite in a local checkout before promoting the candidate.
