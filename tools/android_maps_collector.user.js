@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         CRMT Google Maps Review Capture (Android pilot)
+// @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.6.0
-// @description  Persistent, configurable capture of visible public Google Maps review cards; exports raw and one-star evidence.
+// @version      0.7.0
+// @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
 // @grant        none
@@ -82,7 +82,7 @@
   ].join(";");
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-      <strong>CRMT review capture</strong>
+      <strong>Review Audit Tool</strong>
       <button data-action="hide" style="font-size:18px">−</button>
     </div>
     <div data-status style="margin:8px 0">Waiting for a Google Maps business profile.</div>
@@ -495,7 +495,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "crmt-android-userscript-0.6.0",
+        collector: "review-audit-tool-android-0.7.0",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
