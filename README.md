@@ -6,12 +6,14 @@ A zero-cost-first, evidence-preserving project to audit public Google Maps revie
 
 The first hosted Gosom scraper experiment failed qualification: it captured only 1 one-star review against a point-in-time Google listing benchmark of 69. That output is not a comprehensive audit dataset.
 
-A separate experimental Playwright collector now operates the rendered Google Maps interface:
-- `tools/local_maps_collector.py`
-- `requirements-local.txt`
-- `LOCAL_BROWSER_PILOT.md`
+Two experimental local collectors now target the rendered Google Maps interface:
+- Desktop/laptop Playwright: `tools/local_maps_collector.py`
+- Android Firefox userscript: `tools/android_maps_collector.user.js`
+- Android setup: `ANDROID_PILOT.md`
+- Desktop setup: `requirements-local.txt`, `LOCAL_BROWSER_PILOT.md`
+- Non-destructive one-star derivation: `tools/filter_one_star.py`
 
-This collector is **not yet live-tested**. It attempts to search for the exact dealership, open Reviews, select Lowest, scroll the visible review feed, and preserve raw review cards plus a trace manifest. It never declares completeness automatically. The next engineering gate is a live Greenville run that proves correct listing identity, successful Lowest sorting, real feed movement, accurate field extraction, and count reconciliation.
+Both collectors are **not yet live-tested**. The desktop path uses Playwright; the Android path uses Firefox plus Violentmonkey and user-controlled visible-card capture. Both are intended to verify the Greenville identity and Lowest sorting before capture. The Android userscript exports raw and one-star JSONL/CSV plus a manifest. The desktop filter derives one-star records without modifying raw captures. Neither path declares completeness automatically. The next engineering gate is a live Greenville run that proves correct listing identity, successful Lowest sorting, real feed movement, accurate field extraction, and count reconciliation.
 
 ## Collection and evidence principles
 
@@ -37,12 +39,10 @@ This collector is **not yet live-tested**. It attempts to search for the exact d
 
 The official Car-Mart Greenville directory page supplies the dealership identity and address. Its directions link was observed resolving to an address-only Google Maps pin, not the canonical business profile. The visible-browser pilot therefore searches by exact name and address rather than assuming the directions URL is the review listing.
 
-See [LOCAL_BROWSER_PILOT.md](LOCAL_BROWSER_PILOT.md) for setup and the experimental run command. That path currently requires a desktop/laptop with Python and Chromium; it is not an Android-installable app.
+See [LOCAL_BROWSER_PILOT.md](LOCAL_BROWSER_PILOT.md) for the desktop setup and [ANDROID_PILOT.md](ANDROID_PILOT.md) for the phone-based Firefox/Violentmonkey candidate. Neither has yet passed a live Google Maps test.
 
 ## Outputs
 
-The local pilot writes:
-- `output/local-browser-capture.jsonl`: raw visible review-card captures, including mixed ratings
-- `output/local-browser-capture.manifest.json`: listing identity, collection metadata, scroll trace, counts and limitations
+The desktop pilot writes raw JSONL and a scroll/identity manifest; `tools/filter_one_star.py` derives one-star JSONL and CSV without altering the raw file. The Android pilot exports raw JSONL, one-star JSONL, one-star CSV, and a manifest from the browser session.
 
 Do not submit these outputs as a comprehensive audit until the Greenville qualification gates pass. Expand to other dealerships only after the pilot is repeatable and independently verified.
