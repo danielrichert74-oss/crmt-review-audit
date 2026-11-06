@@ -29,15 +29,18 @@ Files:
 ## Greenville pilot
 
 1. In Firefox, open Google Maps and search for CAR-MART of Greenville, Texas.
-2. Open the business profile, then Reviews.
-3. Choose the **Lowest** review sort in Google Maps.
-4. The CRMT capture panel should appear. Tap **Verify & arm**.
-5. The panel must confirm the title, expected address, phone, and selected
-   Lowest sort. If any check fails, it does not arm.
-6. Tap **Capture visible**, then **Scroll feed once**. Allow the page to load,
+2. Open the business profile overview. Before opening Reviews, tap **Verify
+   business**. Google may hide address and phone details after switching to
+   the review view, so identity is checked on the overview page first.
+3. Open Reviews and choose the **Lowest** review sort in Google Maps.
+4. Tap **Arm (Lowest detected)** if the script detects Google's selected state.
+   If the live UI does not expose that state, visually confirm Lowest is
+   selected and tap **Arm (Lowest confirmed visually)** instead. The manifest
+   distinguishes automatic DOM verification from user confirmation.
+5. Tap **Capture visible**, then **Scroll feed once**. Allow the page to load,
    and capture again. Repeat while the list continues to load. The script also
    watches page changes and deduplicates cards it sees.
-7. Export **raw JSONL**, **one-star JSONL**, **one-star CSV**, and **manifest**.
+6. Export **raw JSONL**, **one-star JSONL**, **one-star CSV**, and **manifest**.
    Keep the raw file and manifest together as source artifacts.
 
 The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
