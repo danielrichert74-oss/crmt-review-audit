@@ -324,7 +324,7 @@
           listing_url_at_verification: identity?.listing_url_at_verification || "",
           listing_url_at_export: location.href,
           identity_checks: identity,
-          lowest_selected_at_arm: true,
+          lowest_selected_at_arm: Boolean(sortVerificationMethod),
           lowest_verification_method: sortVerificationMethod,
           raw_cards_captured: rows.length,
           one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
