@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.1.1
+// @version      0.1.2
 // @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -82,12 +82,17 @@
   };
 
   function identityCheck() {
-    const title = clean(document.querySelector("h1")?.innerText);
+    const h1Title = clean(document.querySelector("h1")?.innerText);
+    const documentTitle = clean(document.title);
     const ariaText = [...document.querySelectorAll("[aria-label]")]
       .map(node => node.getAttribute("aria-label") || "").join(" ");
-    const body = clean((document.body?.innerText || "") + " " + ariaText);
-    const titleNormalized = norm(title).replace(/[^a-z0-9]/g, "");
-    const titleOk = EXPECTED.titleTokens.every(t => titleNormalized.includes(t));
+    const bodyText = document.body?.innerText || "";
+    const bodyContent = document.body?.textContent || "";
+    const body = clean([bodyText, bodyContent, ariaText, documentTitle].join(" "));
+    const title = h1Title || documentTitle;
+    const titleSources = norm([h1Title, documentTitle, ariaText].join(" "))
+      .replace(/[^a-z0-9]/g, "");
+    const titleOk = EXPECTED.titleTokens.every(t => titleSources.includes(t));
     const bodyNormalized = norm(body).replace(/[^a-z0-9]/g, "");
     // Google Maps may display this verified address as "5107 I-30 Frontage Rd"
     // rather than "5107 Interstate Highway 30". Keep all other identity checks strict.
@@ -99,7 +104,22 @@
       bodyNormalized.includes("i30frontageroad");
     const addressOk = addressCoreOk && streetAliasOk;
     const phoneOk = digits(body).includes(digits(EXPECTED.phone));
-    return { ok: titleOk && addressOk && phoneOk, title, titleOk, addressOk, phoneOk };
+    return {
+      ok: titleOk && addressOk && phoneOk, title, titleOk, addressOk, phoneOk,
+      diagnostic: {
+        host: location.hostname,
+        documentTitle,
+        h1Title,
+        bodyInnerTextLength: bodyText.length,
+        bodyTextContentLength: bodyContent.length,
+        hasStreetNumber: bodyNormalized.includes("5107"),
+        hasGreenville: bodyNormalized.includes("greenville"),
+        hasTexas: bodyNormalized.includes("tx"),
+        hasZip: bodyNormalized.includes("75402"),
+        hasPhone: digits(body).includes(digits(EXPECTED.phone)),
+        hasStreetAlias: streetAliasOk
+      }
+    };
   }
 
   function lowestCheck() {
@@ -280,7 +300,8 @@
         verifiedIdentity = null;
         status("IDENTITY FAIL — title:" + identity.titleOk +
           ", address:" + identity.addressOk + ", phone:" + identity.phoneOk +
-          ". Verify the business on its overview page before opening Reviews.");
+          ". DIAGNOSTIC: " + JSON.stringify(identity.diagnostic) +
+          ". Do not open Reviews yet.");
       } else {
         verifiedIdentity = {
           ...identity,
