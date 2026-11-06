@@ -36,7 +36,10 @@ This tool collects and analyzes public review evidence; review allegations are n
 - `d468d7ad16dddf24fb8b6d815a9391de6d1751f0` — scroll-trace capture.
 - `6800dcd1e438b753a47748739c83406039238b4e` — processor trace summary.
 - `bb87daee84e6e89ecc65d266d5b28ca12708f789` — trace-summary fixture test.
-- `adad5eee91644b910caecc6fec3cb4789e1ff4df` — status update.
+- `adad5eee91644b910caecc6fec3cb4789e1ff4df` — scroll-trace status update.
+- `ce6a439cf88561dc308066e3e0af26e1151ba01f` — persistent engineering handoff created.
+- `fd26678f01c5d5123279d8b0699e6d37c04b49fc` — product naming/handoff status entry.
+- `4d06c4dee822c287e681d94fccad062377ea8bb6` — persistent revision notes created.
 
 ## Verification — precise status
 - Latest userscript passed JavaScript syntax parsing after trace changes.
