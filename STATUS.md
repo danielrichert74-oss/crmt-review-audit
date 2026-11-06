@@ -128,3 +128,11 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Added automatic single-file JSON bundle export after feed exhaustion or manual stop. The bundle includes raw cards, the derived one-star subset, identity evidence, collection timing, scroll cycles, stop reason, and missing-field counts.
 - Added a conservative Reviews-tab label matcher and verified JavaScript syntax parsing in an isolated V8 runtime.
 - Repository changes committed; no live Google Maps run was performed. The one-click path is therefore an improved candidate, not yet a qualified audit. The bundle must be reconciled and independently spot-checked before evidentiary use.
+
+
+## Android bundle processing — 2026-11-06
+
+- Added `tools/process_android_bundle.py` to convert the Android one-click JSON bundle into raw JSONL, independently derived one-star JSONL/CSV, SHA-256 hashes, missing-field counts, optional benchmark comparison, and an audit manifest.
+- Added unit tests for duplicate handling, rating recovery from labels, raw preservation, benchmark comparison, and the permanent incomplete flag.
+- Fixed escaping in the processor's rating-label regex and JSONL newline writer after inspecting the committed source.
+- These additions have not yet been run under Python in this session. JavaScript collector syntax and static acceptance checks passed; live Maps traversal remains untested.
