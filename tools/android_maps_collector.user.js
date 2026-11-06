@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         CRMT Google Maps Review Capture (Android pilot)
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.2.0
-// @description  User-controlled capture of visible public Google Maps review cards; exports raw and one-star evidence.
+// @version      0.3.0
+// @description  Persistent, configurable capture of visible public Google Maps review cards; exports raw and one-star evidence.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
 // @grant        none
@@ -18,6 +18,26 @@
     phone: "903-458-9900"
   };
   const cards = new Map();
+  let storageKey = "crmt-review-capture-greenville-v1";
+  let storageWarning = "";
+  function persistCards() {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify([...cards.values()]));
+      storageWarning = "";
+    } catch (error) {
+      storageWarning = " Local save failed (" + (error?.name || "storage error") + "); export now.";
+    }
+  }
+  function restoreCards() {
+    cards.clear();
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      if (Array.isArray(saved)) saved.forEach(row => {
+        if (row && row.capture_key) cards.set(row.capture_key, row);
+      });
+    } catch (_) { storageWarning = " Previous local save could not be read."; }
+    updateCount();
+  }
   let armed = false;
   let verifiedIdentity = null;
   let sortVerificationMethod = null;
@@ -59,6 +79,7 @@
     <div data-count style="margin:6px 0">0 captured · 0 one-star</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <button data-action="identity">Verify business</button>
+      <button data-action="configure">Configure dealership</button>
       <button data-action="verify">Arm (Lowest detected)</button>
       <button data-action="manual">Arm (Lowest confirmed visually)</button>
       <button data-action="unsorted">Arm (Unsorted visible reviews)</button>
@@ -234,7 +255,8 @@
     }
     lastCapture = new Date().toISOString();
     updateCount();
-    status("Captured " + added + " new card(s); " + visible.length + " currently visible.");
+    if (added) persistCards();
+    status("Captured " + added + " new card(s); " + visible.length + " currently visible." + storageWarning);
   }
 
   function scrollOnce() {
@@ -361,6 +383,17 @@
       panel.innerHTML = '<button data-action="show" style="width:32px;height:32px">CR</button>';
     } else if (action === "show") {
       location.reload();
+    } else if (action === "configure") {
+      const title = prompt("Exact dealership name:", EXPECTED.titleTokens.join(" "));
+      if (title === null || !clean(title)) return;
+      const address = prompt("Full dealership street address:", EXPECTED.address);
+      if (address === null || !clean(address)) return;
+      const phone = prompt("Dealership phone number:", EXPECTED.phone);
+      if (phone === null || !clean(phone)) return;
+      EXPECTED.titleTokens = norm(title).split(/\\s+/).filter(Boolean);
+      EXPECTED.address = clean(address);
+      EXPECTED.phone = clean(phone);
+      status("Configuration entered. Verify the dealership overview before collecting.");
     } else if (action === "identity") {
       const identity = identityCheck();
       armed = false;
@@ -371,6 +404,11 @@
           ". DIAGNOSTIC: " + JSON.stringify(identity.diagnostic) +
           ". Do not open Reviews yet.");
       } else {
+        const nextStorageKey = "crmt-review-capture-" + hash(location.href.split("?")[0]).slice(6) + "-v1";
+        if (nextStorageKey !== storageKey) {
+          storageKey = nextStorageKey;
+          restoreCards();
+        }
         verifiedIdentity = {
           ...identity,
           verified_at_utc: new Date().toISOString(),
@@ -459,5 +497,6 @@
     if (armed && records.some(record => !panel.contains(record.target))) captureVisible();
   });
   observer.observe(document.body, { childList: true, subtree: true });
-  status("Open the Greenville business overview and tap Verify business before opening Reviews.");
+  restoreCards();
+  status("Pilot 0.3.0 loaded. Configure dealership if needed, then verify its Google Maps overview.");
 })();
