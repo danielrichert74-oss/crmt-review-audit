@@ -121,7 +121,7 @@ def main():
     for review in review_objects:
         rating = review.get("rating_float")
         if rating is None:
-            rating = review.get("rating")
+            rating = review.get("Rating", review.get("rating"))
         try:
             is_one_star = float(rating) == 1.0
         except (TypeError, ValueError):
@@ -131,11 +131,11 @@ def main():
 
         review_id = review.get("review_id") or ""
         text_value = (review.get("text_original") or review.get("text_translated")
-                      or review.get("description") or "")
-        author = review.get("name") or ""
+                      or review.get("Description") or review.get("description") or "")
+        author = review.get("Name") or review.get("name") or ""
         posted = review.get("published_at") or iso_from_micros(
             review.get("posted_at_unix_micros")
-        ) or review.get("when") or ""
+        ) or review.get("When") or review.get("when") or ""
         dedupe_key = review_id or (author, posted, text_value)
         if dedupe_key in seen:
             duplicates += 1
