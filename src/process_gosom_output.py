@@ -77,8 +77,9 @@ def main():
     pilot = load_pilot()
     if args.prepare_input:
         args.prepare_input.parent.mkdir(parents=True, exist_ok=True)
-        args.prepare_input.write_text(pilot["official_google_maps_link"].strip() + "\n", encoding="utf-8")
-        print("Prepared one exact Google Maps listing URL for Greenville, TX.")
+        exact_query = ", ".join([pilot["store_name"], pilot["address"], pilot["city"], pilot["state"]])
+        args.prepare_input.write_text(exact_query + "\n", encoding="utf-8")
+        print("Prepared one exact dealership query from the official Car-Mart directory.")
         return 0
 
     if not args.raw:
@@ -94,10 +95,18 @@ def main():
         if not isinstance(entry, dict):
             continue
         phone_ok = expected_phone and norm(entry.get("phone")) == expected_phone
-        address = norm(entry.get("address"))
+        complete = entry.get("complete_address") or {}
+        address_parts = [
+            entry.get("address", ""),
+            complete.get("street", "") if isinstance(complete, dict) else "",
+            complete.get("city", "") if isinstance(complete, dict) else "",
+            complete.get("state", "") if isinstance(complete, dict) else "",
+            complete.get("postal_code", "") if isinstance(complete, dict) else "",
+        ]
+        address = norm(" ".join(str(part) for part in address_parts))
         title = norm(entry.get("title"))
-        name_ok = ("carmart" in title or "car-mart" in str(entry.get("title", "")).lower())
-        address_ok = ("greenville" in address and "5107" in address)
+        name_ok = "carmart" in title and "greenville" in title
+        address_ok = "greenville" in address and "5107" in address
         if phone_ok or (name_ok and address_ok):
             matches.append(entry)
 
