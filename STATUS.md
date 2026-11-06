@@ -136,3 +136,11 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Added unit tests for duplicate handling, rating recovery from labels, raw preservation, benchmark comparison, and the permanent incomplete flag.
 - Fixed escaping in the processor's rating-label regex and JSONL newline writer after inspecting the committed source.
 - These additions have not yet been run under Python in this session. JavaScript collector syntax and static acceptance checks passed; live Maps traversal remains untested.
+
+
+## Automatic launch hardening — 2026-11-06
+
+- Updated Android userscript to v0.5.0.
+- It now waits up to 45 seconds for the selected page title itself to identify CAR-MART of Greenville and for the configured address and phone checks to pass. Only then does it open Reviews and begin the unsorted all-ratings capture automatically.
+- The manual RUN AUDIT button remains as a fallback. Tightened the title gate to avoid auto-starting merely because a search-results page contains the dealership name in unrelated page text.
+- JavaScript syntax parsing passed after the change. This remains a candidate build pending live Android/Google Maps qualification.
