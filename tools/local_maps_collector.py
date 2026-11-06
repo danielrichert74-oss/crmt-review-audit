@@ -230,7 +230,7 @@ def main():
                 batch = extract_visible_cards(page)
                 new_this_round = 0
                 for item in batch:
-                    rating = re.search(r"([1-5](?:\\.\\d+)?)\\s*star", item.get("rating_label", ""), re.I)
+                    rating = re.search(r"([1-5](?:\.\d+)?)\s*star", item.get("rating_label", ""), re.I)
                     if rating:
                         item["rating_value"] = float(rating.group(1))
                     else:
