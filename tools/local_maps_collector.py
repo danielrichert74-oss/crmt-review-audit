@@ -87,8 +87,11 @@ def choose_reviews(page):
 
 
 def choose_lowest(page):
-    # Google changes labels periodically; inspect visible controls and use
-    # accessible text rather than a fixed class name.
+    """Select Lowest and verify the menu exposes it as the active sort.
+
+    Google Maps changes its DOM frequently. Fail closed when the interface
+    does not expose a positive selected-state signal.
+    """
     sort_candidates = [
         page.locator('button[aria-label*="Sort"]').first,
         page.get_by_role("button", name=re.compile("sort", re.I)).first,
@@ -105,14 +108,57 @@ def choose_lowest(page):
         except Exception:
             pass
     if not opened:
-        return False
+        return {"verified": False, "evidence": "sort-control-not-found"}
+
     try:
-        option = page.get_by_text(re.compile(r"^\s*Lowest\s*$", re.I)).last
+        option = page.get_by_text(re.compile(r"^\\s*Lowest\\s*$", re.I)).last
+        if not option.count() or not option.is_visible():
+            return {"verified": False, "evidence": "lowest-option-not-visible"}
         option.click(timeout=4000)
-        page.wait_for_timeout(1800)
-        return True
+        page.wait_for_timeout(1200)
+    except Exception as exc:
+        return {"verified": False, "evidence": "lowest-click-failed: " + str(exc)[:240]}
+
+    # Reopen the sort menu and inspect an explicit selected-state attribute.
+    for item in sort_candidates:
+        try:
+            if item.count() and item.is_visible():
+                item.click(timeout=2500)
+                page.wait_for_timeout(400)
+                break
+        except Exception:
+            continue
+
+    try:
+        evidence = page.evaluate("""() => {
+          const norm = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+          const nodes = [...document.querySelectorAll('[role="menuitemradio"], [role="option"], [aria-checked], [aria-selected]')];
+          const lowest = nodes.filter(n => norm(n.innerText || n.textContent) === 'lowest');
+          return lowest.map(n => ({
+            role: n.getAttribute('role') || '',
+            ariaChecked: n.getAttribute('aria-checked'),
+            ariaSelected: n.getAttribute('aria-selected'),
+            dataSelected: n.getAttribute('data-selected'),
+            className: String(n.className || '').slice(0, 160)
+          }));
+        }""")
     except Exception:
-        return False
+        evidence = []
+
+    verified = any(
+        str(item.get("ariaChecked", "")).lower() == "true"
+        or str(item.get("ariaSelected", "")).lower() == "true"
+        or str(item.get("dataSelected", "")).lower() == "true"
+        for item in evidence
+    )
+    try:
+        page.keyboard.press("Escape")
+    except Exception:
+        pass
+    return {
+        "verified": verified,
+        "evidence": evidence if evidence else "no-explicit-selected-state-exposed"
+    }
 
 
 def find_scroll_container(page):
@@ -220,7 +266,8 @@ def main():
         listing_url = page.url
 
         opened_reviews = choose_reviews(page) if identity_verified else False
-        lowest_selected = choose_lowest(page) if opened_reviews else False
+        sort_check = choose_lowest(page) if opened_reviews else {"verified": False, "evidence": "reviews-not-opened"}
+        lowest_selected = bool(sort_check.get("verified"))
         if not identity_verified:
             print(
                 f"STOP: listing title did not verify as CAR-MART of Greenville: {listing_title!r}",
@@ -290,7 +337,8 @@ def main():
             "query": args.query, "listing_title": listing_title,
             "identity_verified_by_title": identity_verified,
             "listing_url": listing_url, "opened_reviews": opened_reviews,
-            "selected_lowest": lowest_selected, "scroll_container": scroll_meta,
+            "selected_lowest": lowest_selected, "sort_verification": sort_check.get("evidence"),
+            "scroll_container": scroll_meta,
             "unique_cards_captured": len(captured),
             "one_star_cards_captured": sum(1 for x in captured.values() if x.get("rating_value") == 1.0),
             "stop_reason": stop_reason, "rounds": len(trace),
