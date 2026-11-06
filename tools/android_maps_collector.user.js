@@ -180,15 +180,13 @@
     const nodes = [...document.querySelectorAll(
       '[role="menuitemradio"],[role="option"],[aria-checked="true"],[aria-selected="true"]'
     )];
-    const selected = nodes.some(n =>
+    // Only a selected-state signal can machine-verify Lowest. A button label
+    // that merely mentions "Lowest" may describe an available action, not state.
+    return nodes.some(n =>
       norm(n.innerText || n.textContent) === "lowest" &&
       (n.getAttribute("aria-checked") === "true" ||
        n.getAttribute("aria-selected") === "true")
     );
-    const labels = [...document.querySelectorAll('button[aria-label]')]
-      .map(n => norm(n.getAttribute("aria-label")));
-    const buttonLabel = labels.some(x => x.includes("sort") && x.includes("lowest"));
-    return selected || buttonLabel;
   }
 
   function extractCard(el) {
