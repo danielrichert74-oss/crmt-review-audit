@@ -191,3 +191,22 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - README and Android deployment guide updated for the product name and v0.7.0 scroll-trace capability.
 - Added `HANDOFF.md` with current architecture, exact latest commits, verification boundaries, $0 constraints, deployment gates, and a resume checklist to prevent repeated experiments after a session interruption.
 - No live browser/device qualification is claimed. The product remains in pilot engineering until real Android capture and reconciliation pass.
+
+
+## QA hardening branch — 2026-11-06
+
+- Created branch `qa-hardening-2026-11-06` for a focused processor/collector maintenance pass.
+- Processor now rejects boolean values as star ratings (Python treats `True` as integer 1), emits a 1–5 plus unknown rating distribution, and flags mismatches between the declared trace cycle count and valid trace records. It also flags disagreement between the collector-supplied one-star subset and independent raw-card derivation.
+- Added regression tests for boolean-rating rejection and trace-count mismatch warnings.
+- Aligned the userscript runtime startup label and evidence collector version to 0.7.1; removed the stale 0.6.0 startup message.
+- These changes are committed on the QA branch. They have not yet been executed in a Python test environment or live Firefox/Google Maps. Do not merge or label deployment-ready until test execution and the live Android deployment gates in HANDOFF.md pass.
+
+
+- Follow-up source review found a blocking defect missed by earlier static checks: `runUnsortedAudit` contained an `await` expression but was not declared `async`. Corrected the declaration and added rejection handling to both auto-launch and button-launch paths. Added a source regression test to prevent recurrence. This demonstrates why the previous syntax-pass notes should not be treated as proof of live behavior; the 0.7.1 branch still needs local test execution and live device qualification.
+
+
+- Evidence-preservation hardening: the collector now keys no-ID cards by stable DOM-node/content-signature observations, preserves same-content cards from separate DOM nodes, and records a potential-duplicate fingerprint. The processor no longer discards matching one-star rows; it preserves every observed row and reports potential duplicate counts/fingerprints. This avoids deleting a legitimate distinct review merely because its content matches another review.
+- Added a direct **Export full evidence bundle** button as a user-gesture fallback if an automatic mobile download is blocked.
+- Expanded regression fixtures to cover repeated Google review IDs and separate review IDs with identical content. Full repository test execution and live Android qualification remain outstanding.
+
+- Candidate version advanced to 0.7.2 after duplicate-preservation and mobile full-bundle export changes; source regression tests now expect 0.7.2. Targeted logic checks passed; no full-checkout test or live Android result is claimed.

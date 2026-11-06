@@ -22,26 +22,33 @@ class AndroidBundleProcessorTests(unittest.TestCase):
                 "raw_reviews": [
                     {"review_id": "r1", "rating_value": 1, "review_text": "one"},
                     {"review_id": "r1", "rating_value": 1, "review_text": "duplicate"},
+                    {"review_id": "r4", "rating_value": 1, "review_text": "one"},
                     {"review_id": "r2", "rating_value": 5, "review_text": "five"},
                     {"review_id": "r3", "rating_value": None, "review_text": "unknown"},
                 ],
                 "one_star_reviews": [
                     {"review_id": "r1", "rating_value": 1},
                     {"review_id": "r1", "rating_value": 1},
+                    {"review_id": "r4", "rating_value": 1},
                 ],
             }
             source.write_text(json.dumps(bundle), encoding="utf-8")
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(out),
-                 "--benchmark-one-star-count", "1"],
+                 "--benchmark-one-star-count", "2"],
                 check=True, capture_output=True, text=True,
             )
             manifest = json.loads(result.stdout)
             raw = [json.loads(line) for line in (out / "raw_reviews.jsonl").read_text().splitlines()]
             one = [json.loads(line) for line in (out / "one_star_reviews.jsonl").read_text().splitlines()]
-            self.assertEqual(len(raw), 4)
-            self.assertEqual(len(one), 1)
-            self.assertEqual(manifest["counts"]["duplicate_one_star"], 1)
+            self.assertEqual(len(raw), 5)
+            self.assertEqual(len(one), 3)
+            csv_header = (out / "one_star_reviews.csv").read_text(encoding="utf-8").splitlines()[0]
+            self.assertIn("potential_duplicate_signature", csv_header)
+            self.assertIn("deduplication_basis", csv_header)
+            self.assertEqual(manifest["counts"]["potential_duplicate_one_star"], 1)
+            self.assertEqual(manifest["counts"]["one_star_unique_fingerprints"], 2)
+            self.assertEqual(manifest["counts"]["one_star_records_preserved"], 3)
             self.assertEqual(manifest["counts"]["unknown_rating"], 1)
             self.assertTrue(manifest["benchmark_count_match"])
             self.assertTrue(manifest["derived_subset_count_matches_bundle"])
@@ -61,7 +68,7 @@ class AndroidBundleProcessorTests(unittest.TestCase):
                 [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
                 check=True, capture_output=True, text=True,
             )
-            self.assertEqual(json.loads(result.stdout)["counts"]["one_star_unique"], 1)
+            self.assertEqual(json.loads(result.stdout)["counts"]["one_star_unique_fingerprints"], 1)
 
 
     def test_scroll_trace_is_summarized_without_claiming_completeness(self):
@@ -94,6 +101,47 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             self.assertEqual(trace["cycles_reporting_bottom"], 1)
             self.assertFalse(manifest["complete"])
 
+
+    def test_boolean_rating_is_not_one_star(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "bundle.json"
+            source.write_text(json.dumps({
+                "schema_version": "crmt-review-audit-bundle-1.0",
+                "raw_reviews": [
+                    {"review_id": "bool", "rating_value": True},
+                    {"review_id": "real", "rating_value": 1}
+                ]
+            }), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
+                check=True, capture_output=True, text=True,
+            )
+            manifest = json.loads(result.stdout)
+            one = [json.loads(line) for line in (root / "out" / "one_star_reviews.jsonl").read_text().splitlines()]
+            self.assertEqual([row["review_id"] for row in one], ["real"])
+            self.assertEqual(manifest["rating_distribution"]["1"], 1)
+            self.assertEqual(manifest["rating_distribution"]["unknown"], 1)
+
+    def test_trace_count_mismatch_is_flagged(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "bundle.json"
+            source.write_text(json.dumps({
+                "schema_version": "crmt-review-audit-bundle-1.0",
+                "raw_reviews": [],
+                "collection": {
+                    "scroll_trace_cycles_recorded": 9,
+                    "scroll_trace": [{"newly_captured": 0}]
+                }
+            }), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
+                check=True, capture_output=True, text=True,
+            )
+            manifest = json.loads(result.stdout)
+            self.assertTrue(manifest["integrity_warnings"])
+            self.assertFalse(manifest["complete"])
 
 if __name__ == "__main__":
     unittest.main()

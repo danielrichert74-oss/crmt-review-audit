@@ -20,7 +20,8 @@ FIELDS = [
     "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
     "rating_label", "rating_value", "published_at", "review_text",
     "owner_reply_text", "owner_reply_date", "listing_title", "listing_url",
-    "collected_at_utc", "collector", "card_text",
+    "collected_at_utc", "collector", "card_text", "potential_duplicate_signature",
+    "deduplication_basis",
 ]
 
 
@@ -37,13 +38,14 @@ def sha256_file(path: Path) -> str:
 
 
 def record_key(row: dict[str, Any]) -> str:
-    source_id = row.get("review_id") or row.get("capture_key")
+    """Stable identity/fingerprint for reconciliation; never a deduplication instruction."""
+    source_id = row.get("review_id")
     if source_id:
-        return str(source_id)
+        return "google-review-id:" + str(source_id)
     material = "|".join(str(row.get(key) or "") for key in (
-        "reviewer_name", "published_at", "review_text", "rating_label"
+        "reviewer_name", "published_at", "review_text", "rating_label", "rating_value"
     ))
-    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+    return "content-fingerprint:" + hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 def rating_value(row: dict[str, Any]) -> int | None:
@@ -53,6 +55,9 @@ def rating_value(row: dict[str, Any]) -> int | None:
         import re
         match = re.search(r"([1-5](?:\.0+)?)\s*star", label, re.I)
         value = match.group(1) if match else None
+    # bool subclasses int in Python; it is not a valid star rating.
+    if isinstance(value, bool):
+        return None
     try:
         numeric = float(value)
     except (TypeError, ValueError):
@@ -123,16 +128,11 @@ def main() -> None:
         normalized.append(row)
 
     one_star_all = [row for row in normalized if row["rating_value"] == 1]
-    seen: set[str] = set()
-    one_star: list[dict[str, Any]] = []
-    duplicates = 0
-    for row in one_star_all:
-        key = record_key(row)
-        if key in seen:
-            duplicates += 1
-            continue
-        seen.add(key)
-        one_star.append(row)
+    # Preserve every observed one-star card. Identical content may be a repeated
+    # capture OR two genuinely distinct reviews; the processor cannot decide.
+    one_star = list(one_star_all)
+    one_star_keys = [record_key(row) for row in one_star_all]
+    potential_duplicates = len(one_star_keys) - len(set(one_star_keys))
 
     raw_path = output / "raw_reviews.jsonl"
     one_path = output / "one_star_reviews.jsonl"
@@ -153,11 +153,24 @@ def main() -> None:
         supplied_subset_matches = sorted(record_key(row) for row in supplied_subset) == sorted(
             record_key(row) for row in one_star_all
         )
+    rating_distribution = {
+        str(star): sum(row["rating_value"] == star for row in normalized)
+        for star in range(1, 6)
+    }
+    rating_distribution["unknown"] = sum(row["rating_value"] is None for row in normalized)
+    trace_summary = summarize_scroll_trace(collection)
+    integrity_warnings = []
+    declared_trace_count = collection.get("scroll_trace_cycles_recorded")
+    if declared_trace_count is not None and declared_trace_count != trace_summary["trace_cycles_valid"]:
+        integrity_warnings.append("Declared trace cycle count differs from valid trace objects.")
+    if isinstance(supplied_subset, list) and supplied_subset_matches is False:
+        integrity_warnings.append("Supplied one-star subset differs from independent raw-card derivation.")
     counts = Counter({
         "raw_cards": len(normalized),
         "one_star_before_deduplication": len(one_star_all),
-        "one_star_unique": len(one_star),
-        "duplicate_one_star": duplicates,
+        "one_star_unique_fingerprints": len(set(one_star_keys)),
+        "one_star_records_preserved": len(one_star),
+        "potential_duplicate_one_star": potential_duplicates,
         "non_one_star": sum(row["rating_value"] not in (None, 1) for row in normalized),
         "unknown_rating": sum(row["rating_value"] is None for row in normalized),
         "missing_review_id": sum(not row.get("review_id") for row in normalized),
@@ -173,7 +186,9 @@ def main() -> None:
         "schema_version": bundle.get("schema_version"),
         "listing": listing,
         "collection": collection,
-        "scroll_trace_summary": summarize_scroll_trace(collection),
+        "scroll_trace_summary": trace_summary,
+        "rating_distribution": rating_distribution,
+        "integrity_warnings": integrity_warnings,
         "counts": dict(counts),
         "supplied_one_star_subset_count": supplied_subset_count,
         "derived_subset_count_matches_bundle": (
@@ -182,7 +197,7 @@ def main() -> None:
         "bundle_subset_matches_raw_filter": supplied_subset_matches,
         "benchmark_one_star_count": benchmark,
         "benchmark_count_match": (
-            len(one_star) == benchmark if benchmark is not None else None
+            len(set(one_star_keys)) == benchmark if benchmark is not None else None
         ),
         "outputs": {
             "raw_jsonl": str(raw_path),
@@ -195,6 +210,11 @@ def main() -> None:
             "one_star_csv": sha256_file(csv_path),
         },
         "complete": False,
+        "deduplication_policy": (
+            "No raw or one-star records are discarded. Potential duplicates are flagged "
+            "by Google review ID or content fingerprint; fingerprint collisions require "
+            "manual/source-level reconciliation and may represent distinct genuine reviews."
+        ),
         "completeness_note": (
             "Count comparison is a reconciliation signal only. It does not prove "
             "that Google Maps exposed every historical review. Independently "

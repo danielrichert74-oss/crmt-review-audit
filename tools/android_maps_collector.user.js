@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.0
+// @version      0.7.2
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -22,6 +22,8 @@
     if (savedConfig && Array.isArray(savedConfig.titleTokens) && savedConfig.address && savedConfig.phone) EXPECTED = savedConfig;
   } catch (_) {}
   const cards = new Map();
+  const nodeCaptureKeys = new WeakMap();
+  let fallbackCaptureSequence = 0;
   let storageKey = "crmt-review-capture-greenville-v1";
   let storageWarning = "";
   function persistCards() {
@@ -100,6 +102,7 @@
       <button data-action="raw">Export raw JSONL</button>
       <button data-action="one">Export one-star JSONL</button>
       <button data-action="csv">Export one-star CSV</button>
+      <button data-action="bundle">Export full evidence bundle</button>
       <button data-action="manifest">Export manifest</button>
     </div>
     <div style="margin-top:7px;font-size:11px;opacity:.8">
@@ -215,13 +218,33 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "crmt-android-userscript-pilot",
+      collector: "review-audit-tool-android-0.7.2",
       card_text: cardText
     };
     const keyMaterial = [
-      row.reviewer_name, row.published_at, row.review_text, row.rating_label
+      row.reviewer_name, row.published_at, row.review_text, row.rating_label, row.rating_value
     ].join("|");
-    row.capture_key = row.review_id || hash(keyMaterial);
+    row.potential_duplicate_signature = hash(keyMaterial);
+    if (row.review_id) {
+      row.capture_key = "google-review-id:" + row.review_id;
+      row.deduplication_basis = "google-review-id";
+    } else {
+      // A DOM-node/signature key prevents repeated polling of the same rendered
+      // card from overwriting or duplicating it. Different DOM nodes with the
+      // same fingerprint are retained as separate observations and flagged.
+      let signatures = nodeCaptureKeys.get(el);
+      if (!signatures) {
+        signatures = new Map();
+        nodeCaptureKeys.set(el, signatures);
+      }
+      if (!signatures.has(row.potential_duplicate_signature)) {
+        fallbackCaptureSequence++;
+        signatures.set(row.potential_duplicate_signature,
+          "observed-card:" + row.potential_duplicate_signature + ":" + fallbackCaptureSequence);
+      }
+      row.capture_key = signatures.get(row.potential_duplicate_signature);
+      row.deduplication_basis = "dom-node-and-content-signature";
+    }
     return row;
   }
 
@@ -478,7 +501,7 @@
     a.href = url;
     a.download = filename;
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
   function exportAuditBundle() {
@@ -495,7 +518,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.0",
+        collector: "review-audit-tool-android-0.7.2",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -524,8 +547,8 @@
     };
     download("crmt-audit-bundle-" + Date.now() + ".json", JSON.stringify(bundle, null, 2), "application/json");
     autoBundleExported = true;
-    status("AUTO-COLLECT finished. Evidence bundle downloaded: " + rows.length +
-      " total reviews, " + oneStar.length + " one-star. Completeness remains unverified.");
+    status("Evidence bundle export requested: " + rows.length +
+      " total reviews, " + oneStar.length + " one-star. Check Downloads; if absent, tap Export full evidence bundle. Completeness remains unverified.");
   }
 
   function exportRaw() {
@@ -551,7 +574,7 @@
     const fields = [
       "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
       "rating_label", "rating_value", "published_at", "review_text",
-      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text"
+      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text", "potential_duplicate_signature", "deduplication_basis"
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
@@ -564,7 +587,10 @@
     if (!button) return;
     const action = button.dataset.action;
     if (action === "run") {
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (action === "hide") {
       panel.style.width = "42px";
       panel.style.height = "42px";
@@ -655,6 +681,7 @@
     else if (action === "raw") { persistCards(); exportRaw(); }
     else if (action === "one") { persistCards(); exportOneStar(); }
     else if (action === "csv") { persistCards(); exportCsv(); }
+    else if (action === "bundle") { exportAuditBundle(); }
     else if (action === "manifest") {
       persistCards();
       const rows = [...cards.values()];
@@ -693,7 +720,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Pilot 0.6.0 loaded. Waiting for the verified Greenville business profile.");
+  status("Review Audit Tool 0.7.2 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
@@ -705,7 +732,10 @@
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
       status("Verified Greenville profile detected. Starting automatic audit…");
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (autoLaunchAttempts >= 45) {
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
