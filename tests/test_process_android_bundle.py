@@ -40,8 +40,9 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             raw = [json.loads(line) for line in (out / "raw_reviews.jsonl").read_text().splitlines()]
             one = [json.loads(line) for line in (out / "one_star_reviews.jsonl").read_text().splitlines()]
             self.assertEqual(len(raw), 4)
-            self.assertEqual(len(one), 1)
-            self.assertEqual(manifest["counts"]["duplicate_one_star"], 1)
+            self.assertEqual(len(one), 2)
+            self.assertEqual(manifest["counts"]["potential_duplicate_one_star"], 1)
+            self.assertEqual(manifest["counts"]["one_star_records_preserved"], 2)
             self.assertEqual(manifest["counts"]["unknown_rating"], 1)
             self.assertTrue(manifest["benchmark_count_match"])
             self.assertTrue(manifest["derived_subset_count_matches_bundle"])
