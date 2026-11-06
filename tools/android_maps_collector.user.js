@@ -218,7 +218,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.5",
+      collector: "review-audit-tool-android-0.7.6",
       card_text: cardText
     };
     const keyMaterial = [
@@ -346,7 +346,7 @@
       /!1s0x[0-9a-f]+:0x[0-9a-f]+/i.test(location.href);
   }
 
-  function clickReviewsTab() {
+  let lastReviewsControlDiagnostic = "";\n\n  function clickReviewsTab() {
     // Never activate review links from search results. On a verified place
     // page, Maps may expose a tab, a rating/count button, or a same-place
     // reviews link depending on viewport and experiment cohort.
@@ -382,8 +382,11 @@
     const target = exact || countButton || samePlaceLink;
     if (!target) {
       const hints = candidates.map(labelOf).filter(label => /\breviews?\b/i.test(label)).slice(0, 8);
-      status("No recognized Reviews control. Visible review-related controls: " +
-        (hints.join(" | ") || "none") + ". Place-page URL: " + location.pathname);
+      lastReviewsControlDiagnostic = "Visible review-related controls: " +
+        (hints.join(" | ") || "none") + ". Visible buttons: " +
+        candidates.filter(node => node.matches('button,[role="tab"],[role="button"]'))
+          .map(labelOf).filter(Boolean).slice(0, 12).join(" | ") +
+        ". Place-page URL: " + location.pathname;
       return false;
     }
     try { target.click(); return true; } catch (_) { return false; }
@@ -409,7 +412,10 @@
     status("Dealership identity verified on its place page. Opening its Reviews tab…");
     const alreadyHasCards = Boolean(document.querySelector("[data-review-id],.jftiEf"));
     if (!alreadyHasCards && !clickReviewsTab()) {
-      status("Identity verified, but Google did not expose a Reviews tab to open. No collection started.");
+      // Preserve the actual diagnostic rather than replacing it with a generic
+      // failure message. This tells us what Google exposed on this device.
+      status("Identity verified; no collection started. " +
+        (lastReviewsControlDiagnostic || "No review control diagnostic was available."));
       return;
     }
     let foundCards = false;
@@ -562,7 +568,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.5",
+        collector: "review-audit-tool-android-0.7.6",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -764,7 +770,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Review Audit Tool 0.7.5 loaded. Waiting for the verified dealership profile.");
+  status("Review Audit Tool 0.7.6 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
