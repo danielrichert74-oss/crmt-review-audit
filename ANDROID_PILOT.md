@@ -38,7 +38,7 @@ The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
 30, Greenville, TX 75402, phone 903-458-9900. Do not use this build for another
 location without changing and reviewing those expected values.
 
-### Automatic unsorted run (v0.7.1)
+### Automatic unsorted run (v0.7.2)
 
 Open the Greenville dealership overview page in Firefox. Once the script detects
 the exact profile title plus matching address and phone, it starts automatically:
@@ -57,7 +57,7 @@ the captured count must be reconciled against a fresh source benchmark.
 
 ## Important limitations
 
-- Version 0.7.1 improves feed selection and records per-cycle traversal by preferring a scrollable `[role=feed]`, then ranking scrollable review-containing containers; the bundle records the selection method and dimensions. This remains a prototype and has not been tested on a live Google Maps page or
+- Version 0.7.2 improves feed selection and records per-cycle traversal by preferring a scrollable `[role=feed]`, then ranking scrollable review-containing containers; the bundle records the selection method and dimensions. This remains a prototype and has not been tested on a live Google Maps page or
   on the user's Android device.
 - The page's mobile DOM may differ from desktop, and Google may change selectors.
 - Identity verification must be performed on the business overview before
@@ -101,9 +101,9 @@ python tools/process_android_bundle.py --input crmt-audit-bundle.json --outdir o
 The processor recomputes the one-star subset from raw reviews, preserves every raw row, preserves all derived one-star rows and flags possible duplicates without deleting them, exports CSV/JSONL, hashes the source and outputs, and writes a manifest. It always records `complete: false`.
 
 
-### QA candidate 0.7.1
+### QA candidate 0.7.2
 
 This candidate fixes an asynchronous startup defect in the one-click run: the review-tab wait uses `await`, so its containing function is now explicitly async and both startup paths handle rejected startup safely. The processor also rejects boolean ratings, reports rating distribution, and flags trace/subset integrity mismatches. Source regression tests were added; run the repository test suite before using this build. This remains unqualified until the real Android/Google Maps acceptance run passes.
 
 
-**Evidence-preservation note (0.7.1 QA candidate):** When Google Maps omits a review ID, separate DOM card observations are retained even if their text matches. The processor flags matching fingerprints as possible duplicates but never removes them automatically. Use the panel's **Export full evidence bundle** action if automatic download does not appear; this is a single export action, not manual review copying.
+**Evidence-preservation note (0.7.2 QA candidate):** When Google Maps omits a review ID, separate DOM card observations are retained even if their text matches. The processor flags matching fingerprints as possible duplicates but never removes them automatically. Use the panel's **Export full evidence bundle** action if automatic download does not appear; this is a single export action, not manual review copying.
