@@ -708,7 +708,10 @@
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
       status("Verified Greenville profile detected. Starting automatic audit…");
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (autoLaunchAttempts >= 45) {
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
