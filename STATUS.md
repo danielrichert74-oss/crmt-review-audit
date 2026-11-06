@@ -153,3 +153,12 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 - Deleted both legacy GitHub Actions collection workflows: the Stophy API workflow and the hosted Gosom/Docker workflow.
 - This prevents accidental invocation of a metered third-party API or consumption of hosted compute minutes. The active Android and desktop collectors remain local visible-browser candidates.
+
+
+## Android feed-discovery hardening — 2026-11-06
+
+- Updated the Android collector to v0.6.0.
+- Feed selection now prefers a scrollable element explicitly marked `role=feed`; otherwise it evaluates scrollable review-containing containers and ranks them by descendant review-card count, scroll range, and area.
+- The exported evidence bundle records the selected feed-detection method, candidate count, role, class name, and initial scroll dimensions. This makes a failed or suspicious traversal diagnosable from the evidence file rather than relying on screenshots or manual review copying.
+- JavaScript syntax parsing and static acceptance checks passed after the change.
+- No live Google Maps or Android-device test has been performed. The change improves the candidate's logic but does not establish that the current Maps mobile DOM will expose a usable feed.
