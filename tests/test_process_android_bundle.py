@@ -64,5 +64,36 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             self.assertEqual(json.loads(result.stdout)["counts"]["one_star_unique"], 1)
 
 
+    def test_scroll_trace_is_summarized_without_claiming_completeness(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "bundle.json"
+            source.write_text(json.dumps({
+                "schema_version": "crmt-review-audit-bundle-1.0",
+                "raw_reviews": [{"review_id": "r1", "rating_value": 1}],
+                "collection": {
+                    "scroll_trace_cycles_recorded": 2,
+                    "scroll_trace": [
+                        {"newly_captured": 3, "scroll_top_after": 500,
+                         "scroll_height_after": 1800, "at_bottom_after_scroll": False},
+                        {"newly_captured": 1, "scroll_top_after": 900,
+                         "scroll_height_after": 2200, "at_bottom_after_scroll": True}
+                    ]
+                }
+            }), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--outdir", str(root / "out")],
+                check=True, capture_output=True, text=True,
+            )
+            manifest = json.loads(result.stdout)
+            trace = manifest["scroll_trace_summary"]
+            self.assertEqual(trace["trace_cycles_valid"], 2)
+            self.assertEqual(trace["new_cards_reported_in_trace"], 4)
+            self.assertEqual(trace["cycles_with_new_cards"], 2)
+            self.assertEqual(trace["max_scroll_top"], 900)
+            self.assertEqual(trace["cycles_reporting_bottom"], 1)
+            self.assertFalse(manifest["complete"])
+
+
 if __name__ == "__main__":
     unittest.main()
