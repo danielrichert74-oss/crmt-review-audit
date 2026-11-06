@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.9
+// @version      0.8.0
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -219,7 +219,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.9",
+      collector: "review-audit-tool-android-0.8.0",
       card_text: cardText
     };
     const keyMaterial = [
@@ -489,22 +489,37 @@
     }
     restoreVerifiedListing(identity);
     status("Dealership identity verified on its place page. Opening its Reviews tab…");
-    const alreadyHasCards = Boolean(document.querySelector("[data-review-id],.jftiEf"));
-    if (!alreadyHasCards && !clickReviewsTab()) {
-      // Preserve the actual diagnostic rather than replacing it with a generic
-      // failure message. This tells us what Google exposed on this device.
+    // DOM review nodes can exist in the business overview as hidden preview
+    // cards. Their presence does NOT prove the full Reviews list is open.
+    // Only skip navigation when the page visibly exposes review-list sorting.
+    const pageTextBeforeOpen = clean(document.body?.innerText || "");
+    const reviewListAlreadyOpen =
+      /(?:sort by|most relevant|newest|lowest)/i.test(pageTextBeforeOpen) &&
+      Boolean(document.querySelector("[data-review-id],.jftiEf"));
+    if (!reviewListAlreadyOpen && !clickReviewsTab()) {
       status("Identity verified; no collection started. " +
         (lastReviewsControlDiagnostic || "No review control diagnostic was available."));
       return;
     }
     let foundCards = false;
     for (let attempt = 0; attempt < 90; attempt++) {
-      if (document.querySelector("[data-review-id],.jftiEf")) {
+      const pageText = clean(document.body?.innerText || "");
+      const listReady =
+        /(?:sort by|most relevant|newest|lowest)/i.test(pageText) ||
+        /\/reviews\b/i.test(location.pathname);
+      const visibleReviewNode = [...document.querySelectorAll("[data-review-id],.jftiEf")]
+        .some(node => {
+          const rect = node.getBoundingClientRect();
+          const css = getComputedStyle(node);
+          return rect.width > 0 && rect.height > 0 &&
+            css.visibility !== "hidden" && css.display !== "none";
+        });
+      if (visibleReviewNode && (listReady || reviewListAlreadyOpen)) {
         foundCards = true;
         break;
       }
       // Re-check after expanding compact mobile Maps details.
-      if (attempt > 0 && attempt % 4 === 0) clickReviewsTab();
+      if (attempt > 0 && attempt % 8 === 0) clickReviewsTab();
       if (attempt === 11 || attempt === 29 || attempt === 59) {
         status("Identity verified. Waiting for Google Reviews to finish loading… " + ((attempt + 1) / 2) + " seconds elapsed.");
       }
@@ -649,7 +664,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.9",
+        collector: "review-audit-tool-android-0.8.0",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
