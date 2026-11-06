@@ -43,6 +43,9 @@ class AndroidBundleProcessorTests(unittest.TestCase):
             one = [json.loads(line) for line in (out / "one_star_reviews.jsonl").read_text().splitlines()]
             self.assertEqual(len(raw), 5)
             self.assertEqual(len(one), 3)
+            csv_header = (out / "one_star_reviews.csv").read_text(encoding="utf-8").splitlines()[0]
+            self.assertIn("potential_duplicate_signature", csv_header)
+            self.assertIn("deduplication_basis", csv_header)
             self.assertEqual(manifest["counts"]["potential_duplicate_one_star"], 1)
             self.assertEqual(manifest["counts"]["one_star_unique_fingerprints"], 2)
             self.assertEqual(manifest["counts"]["one_star_records_preserved"], 3)
