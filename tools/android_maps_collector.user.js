@@ -21,8 +21,8 @@
   let observer = null;
   let lastCapture = null;
 
-  const clean = value => String(value || "").replace(/\\s+/g, " ").trim();
-  const digits = value => String(value || "").replace(/\\D/g, "");
+  const clean = value => String(value || "").replace(/\s+/g, " ").trim();
+  const digits = value => String(value || "").replace(/\D/g, "");
   const norm = value => clean(value).toLowerCase();
   const hash = value => "local-" + value;
 
