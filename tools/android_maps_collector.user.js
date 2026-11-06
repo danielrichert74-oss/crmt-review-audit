@@ -328,6 +328,12 @@
           lowest_verification_method: sortVerificationMethod,
           raw_cards_captured: rows.length,
           one_star_cards_captured: rows.filter(x => x.rating_value === 1).length,
+          non_one_star_cards_captured: rows.filter(x => x.rating_value !== null && x.rating_value !== 1).length,
+          unknown_rating_cards_captured: rows.filter(x => x.rating_value === null).length,
+          cards_missing_review_id: rows.filter(x => !x.review_id).length,
+          cards_missing_reviewer: rows.filter(x => !x.reviewer_name).length,
+          cards_missing_date: rows.filter(x => !x.published_at).length,
+          cards_missing_text: rows.filter(x => !x.review_text).length,
           last_capture_at_utc: lastCapture, complete: false,
           completeness_note: "User-controlled visible-card capture. No claim of complete historical coverage."
         }, null, 2), "application/json");
