@@ -82,3 +82,6 @@ A second local collection interface has been added for the phone:
 - The script was code-reviewed and corrected for regular-expression escaping, mutation-observer recursion, and export-manifest wiring. It has **not** been run on a live Google Maps page or tested on the user's Android device.
 
 Mozilla's current Android add-on help documents installing compatible extensions through Firefox's Add-ons manager, and the Violentmonkey listing identifies Firefox for Android support. This makes the path technically plausible, not yet qualified for audit collection.
+
+
+- Added an explicit Android fallback for sort-state variation: **Verify & arm** requires a detected selected-state signal; **Confirm Lowest visually** is a separate user-attested path and is labeled as such in the exported manifest. This avoids silently treating a manual assertion as machine verification.
