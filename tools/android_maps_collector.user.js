@@ -139,9 +139,17 @@
       return;
     }
     const currentTitle = clean(document.querySelector("h1")?.innerText);
-    if (!verifiedIdentity || !currentTitle || norm(currentTitle) !== norm(verifiedIdentity.title)) {
+    const currentPageText = norm((document.body?.innerText || "") + " " +
+      [...document.querySelectorAll("[aria-label]")]
+        .map(node => node.getAttribute("aria-label") || "").join(" "));
+    const sameBusinessStillVisible = verifiedIdentity &&
+      EXPECTED.titleTokens.every(token =>
+        norm(currentTitle).includes(norm(token)) ||
+        currentPageText.includes(norm(token))
+      );
+    if (!sameBusinessStillVisible) {
       armed = false;
-      status("STOP: the visible business title changed or disappeared. Re-verify the listing before continuing.");
+      status("STOP: the verified business name is no longer visible. Re-check the listing before continuing.");
       return;
     }
     const visible = [...document.querySelectorAll("[data-review-id],.jftiEf")];
@@ -316,5 +324,5 @@
     if (armed && records.some(record => !panel.contains(record.target))) captureVisible();
   });
   observer.observe(document.body, { childList: true, subtree: true });
-  status("Open the Greenville business profile, Reviews, and Lowest. Then tap Verify & arm.");
+  status("Open the Greenville business overview and tap Verify business before opening Reviews.");
 })();
