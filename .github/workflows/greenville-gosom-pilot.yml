@@ -4,8 +4,6 @@ on:
   push:
     paths:
       - "data/run-gosom-pilot.txt"
-      - "src/process_gosom_output.py"
-      - ".github/workflows/greenville-gosom-pilot.yml"
 permissions:
   contents: read
 jobs:
@@ -17,11 +15,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Prepare exact official Google Maps listing URL
+      - name: Prepare exact Google Maps business query from official directory
         run: |
           mkdir -p .tmp output
           python src/process_gosom_output.py --prepare-input .tmp/greenville-url.txt
-          echo "Prepared exact input URL:"
+          echo "Prepared exact business query:"
           cat .tmp/greenville-url.txt
       - name: Run pinned open-source scraper
         env:
