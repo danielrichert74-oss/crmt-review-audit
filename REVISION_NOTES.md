@@ -11,3 +11,11 @@
 
 ## Resume without repeating
 Read `HANDOFF.md` first. It contains current state, commit references, constraints, qualification gates, and the next engineering sequence. Fetch current source from the default branch before modifying anything. Do not rely on older chat summaries where repository state is newer.
+
+
+## 2026-11-06 — QA hardening branch
+- Bumped Android collector to 0.7.1 and corrected its stale 0.6.0 startup message.
+- Processor rejects boolean ratings, reports rating distribution, and flags trace-count and supplied-subset integrity mismatches.
+- Added regression fixtures for boolean rating rejection and trace integrity warnings.
+- Branch: `qa-hardening-2026-11-06`.
+- No claim of test execution or live browser qualification. Run the documented tests and real Android acceptance gate before deployment.
