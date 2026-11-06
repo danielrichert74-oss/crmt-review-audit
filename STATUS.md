@@ -203,3 +203,8 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 
 - Follow-up source review found a blocking defect missed by earlier static checks: `runUnsortedAudit` contained an `await` expression but was not declared `async`. Corrected the declaration and added rejection handling to both auto-launch and button-launch paths. Added a source regression test to prevent recurrence. This demonstrates why the previous syntax-pass notes should not be treated as proof of live behavior; the 0.7.1 branch still needs local test execution and live device qualification.
+
+
+- Evidence-preservation hardening: the collector now keys no-ID cards by stable DOM-node/content-signature observations, preserves same-content cards from separate DOM nodes, and records a potential-duplicate fingerprint. The processor no longer discards matching one-star rows; it preserves every observed row and reports potential duplicate counts/fingerprints. This avoids deleting a legitimate distinct review merely because its content matches another review.
+- Added a direct **Export full evidence bundle** button as a user-gesture fallback if an automatic mobile download is blocked.
+- Expanded regression fixtures to cover repeated Google review IDs and separate review IDs with identical content. Full repository test execution and live Android qualification remain outstanding.
