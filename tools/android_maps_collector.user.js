@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.8.0
+// @updateURL    https://raw.githubusercontent.com/danielrichert74-oss/crmt-review-audit/main/tools/android_maps_collector.user.js
+// @downloadURL  https://raw.githubusercontent.com/danielrichert74-oss/crmt-review-audit/main/tools/android_maps_collector.user.js
+// @version      0.8.1
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -219,7 +221,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.8.0",
+      collector: "review-audit-tool-android-0.8.1",
       card_text: cardText
     };
     const keyMaterial = [
@@ -664,7 +666,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.8.0",
+        collector: "review-audit-tool-android-0.8.1",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
