@@ -107,3 +107,14 @@ Mozilla's current Android add-on help documents installing compatible extensions
 
 - Expanded Android manifest counters: non-one-star and unknown-rating counts, plus missing review ID, reviewer, date, and review-text counts. This makes visible-card extraction quality measurable instead of reporting only total and one-star counts.
 - Added an additional Google Maps hostname match for the Android userscript.
+
+
+## Controlled live-test attempt — 2026-11-06
+
+- Re-ran JavaScript syntax validation against the committed Android userscript; parsing passed.
+- Checked every declared UI action against the click-handler branches; all 11 actions have handlers.
+- Fixed a manifest accuracy issue: `lowest_selected_at_arm` now reflects whether a sort-verification method was actually recorded, rather than being hard-coded true. This was committed separately.
+- Live reference check: Car-Mart's official Greenville page confirms 5107 Interstate Highway 30, Greenville, TX 75402 and 903-458-9900, matching the script's expected address and phone. A third-party review aggregator currently reports a Google review subset and 95 one-star reviews; this is not treated as a Google Maps benchmark or as collector output.
+- A direct Google Maps page could not be opened through the available web reader. The Android userscript has not been executed in a live browser or on the user's S23.
+- Remote browser-agent execution is metered. It was not used because the project's standing $0 constraint prohibits spending credits. No Actions workflow was launched.
+- Result: **static QA passed; live collector test remains blocked pending execution in Firefox Android on the target Google Maps listing.** Do not describe the collector as live-tested or qualified.
