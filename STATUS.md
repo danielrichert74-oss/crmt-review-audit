@@ -200,3 +200,6 @@ Mozilla's current Android add-on help documents installing compatible extensions
 - Added regression tests for boolean-rating rejection and trace-count mismatch warnings.
 - Aligned the userscript runtime startup label and evidence collector version to 0.7.1; removed the stale 0.6.0 startup message.
 - These changes are committed on the QA branch. They have not yet been executed in a Python test environment or live Firefox/Google Maps. Do not merge or label deployment-ready until test execution and the live Android deployment gates in HANDOFF.md pass.
+
+
+- Follow-up source review found a blocking defect missed by earlier static checks: `runUnsortedAudit` contained an `await` expression but was not declared `async`. Corrected the declaration and added rejection handling to both auto-launch and button-launch paths. Added a source regression test to prevent recurrence. This demonstrates why the previous syntax-pass notes should not be treated as proof of live behavior; the 0.7.1 branch still needs local test execution and live device qualification.
