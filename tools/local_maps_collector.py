@@ -45,6 +45,17 @@ def stable_id(card):
 def extract_visible_cards(page):
     return page.evaluate("""() => {
       const cards = [...document.querySelectorAll('[data-review-id], .jftiEf')];
+      // Expand visible review bodies before extraction where Google exposes
+      // a card-local "More" control.
+      for (const el of cards) {
+        for (const button of el.querySelectorAll('button, [role="button"]')) {
+          const label = ((button.getAttribute('aria-label') || '') + ' ' +
+                         (button.innerText || button.textContent || '')).trim();
+          if (/^more$/i.test(label)) {
+            try { button.click(); } catch (_) {}
+          }
+        }
+      }
       return cards.map((el) => {
         const txt = (s) => {
           const n = el.querySelector(s);
@@ -267,8 +278,8 @@ def main():
         except Exception:
             pass
         # Fail closed if Google did not open the intended business profile.
-        # The exact title check is a minimum identity gate, not full address
-        # verification; the manifest preserves the title and URL for review.
+        # Require the business title, full expected street address and phone to
+        # appear in the selected listing page before opening Reviews.
         normalized_title = re.sub(r"[^a-z0-9]", "", listing_title.lower())
         page_text = clean(page.locator("body").inner_text())
         normalized_page_text = re.sub(r"[^a-z0-9]", "", page_text.lower())
