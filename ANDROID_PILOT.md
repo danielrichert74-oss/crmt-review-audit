@@ -1,4 +1,4 @@
-# Android Firefox pilot — CRMT review capture
+# Review Audit Tool — Android Firefox collector
 
 ## Why this path
 
@@ -9,7 +9,7 @@ browser downloads; it has no API key, paid service, proxy, external upload, or
 background server.
 
 Files:
-- `tools/android_maps_collector.user.js` — userscript
+- `tools/android_maps_collector.user.js` — Review Audit Tool userscript
 - `tools/filter_one_star.py` — JSONL one-star derivation
 - `tools/process_android_bundle.py` — processor for the one-click JSON bundle
 
@@ -38,7 +38,7 @@ The default identity gate is CAR-MART of Greenville, 5107 Interstate Highway
 30, Greenville, TX 75402, phone 903-458-9900. Do not use this build for another
 location without changing and reviewing those expected values.
 
-### Automatic unsorted run (v0.6.0)
+### Automatic unsorted run (v0.7.0)
 
 Open the Greenville dealership overview page in Firefox. Once the script detects
 the exact profile title plus matching address and phone, it starts automatically:
@@ -49,15 +49,15 @@ UI attempt. The one-star set is derived from all captured ratings after collecti
 
 When the feed appears exhausted (or collection is manually stopped), the script
 automatically downloads one JSON evidence bundle containing raw reviews, the
-derived one-star subset, identity checks, feed-detection diagnostics, collection timestamps, scroll count,
+derived one-star subset, identity checks, feed-detection diagnostics, per-cycle scroll trace, collection timestamps, scroll count,
 stop reason, field-missing counts, and an explicit `complete: false` flag.
 Keep the tab open during collection. The one-click run is still experimental:
-version 0.6.0 prefers the explicit scrollable review feed and records how the feed was selected; feed exhaustion is not proof that Google exposed every historical review, and
+version 0.7.0 prefers the explicit scrollable review feed and records how the feed was selected; feed exhaustion is not proof that Google exposed every historical review, and
 the captured count must be reconciled against a fresh source benchmark.
 
 ## Important limitations
 
-- Version 0.6.0 improves feed selection by preferring a scrollable `[role=feed]`, then ranking scrollable review-containing containers; the bundle records the selection method and dimensions. This remains a prototype and has not been tested on a live Google Maps page or
+- Version 0.7.0 improves feed selection and records per-cycle traversal by preferring a scrollable `[role=feed]`, then ranking scrollable review-containing containers; the bundle records the selection method and dimensions. This remains a prototype and has not been tested on a live Google Maps page or
   on the user's Android device.
 - The page's mobile DOM may differ from desktop, and Google may change selectors.
 - Identity verification must be performed on the business overview before
