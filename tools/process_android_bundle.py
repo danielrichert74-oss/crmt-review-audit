@@ -120,6 +120,11 @@ def main() -> None:
 
     supplied_subset = bundle.get("one_star_reviews")
     supplied_subset_count = len(supplied_subset) if isinstance(supplied_subset, list) else None
+    supplied_subset_matches = None
+    if isinstance(supplied_subset, list) and all(isinstance(row, dict) for row in supplied_subset):
+        supplied_subset_matches = sorted(record_key(row) for row in supplied_subset) == sorted(
+            record_key(row) for row in one_star_all
+        )
     counts = Counter({
         "raw_cards": len(normalized),
         "one_star_before_deduplication": len(one_star_all),
@@ -143,8 +148,9 @@ def main() -> None:
         "counts": dict(counts),
         "supplied_one_star_subset_count": supplied_subset_count,
         "derived_subset_count_matches_bundle": (
-            supplied_subset_count == len(one_star) if supplied_subset_count is not None else None
+            supplied_subset_count == len(one_star_all) if supplied_subset_count is not None else None
         ),
+        "bundle_subset_matches_raw_filter": supplied_subset_matches,
         "benchmark_one_star_count": benchmark,
         "benchmark_count_match": (
             len(one_star) == benchmark if benchmark is not None else None
