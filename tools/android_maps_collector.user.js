@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.3
+// @version      0.7.4
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -341,12 +341,23 @@
     };
   }
 
+  function isPlaceDetailPage() {
+    return /\/maps\/place\//i.test(location.pathname) ||
+      /!1s0x[0-9a-f]+:0x[0-9a-f]+/i.test(location.href);
+  }
+
   function clickReviewsTab() {
-    const candidates = [...document.querySelectorAll('button,[role="tab"],[role="button"],a')];
+    // Never click broad links in search results: those can return to search
+    // instead of opening the selected dealership's review panel.
+    if (!isPlaceDetailPage()) return false;
+    const candidates = [...document.querySelectorAll('button,[role="tab"],[role="button"]')];
     const target = candidates.find(node => {
       const label = clean((node.getAttribute("aria-label") || "") + " " +
         (node.innerText || node.textContent || ""));
-      return /\breviews\b/i.test(label) && !/write a review|review this place/i.test(label);
+      const exact = /^reviews(?:\s+\(?\d[\d,]*\)?)?$/i.test(label);
+      const rect = node.getBoundingClientRect();
+      return exact && rect.width > 0 && rect.height > 0 &&
+        !/write a review|review this place/i.test(label);
     });
     if (!target) return false;
     try { target.click(); return true; } catch (_) { return false; }
@@ -364,8 +375,12 @@
         JSON.stringify(identity.diagnostic));
       return;
     }
+    if (!isPlaceDetailPage()) {
+      status("Business details match, but this is a Maps search/results page, not the dealership place page. Open the Car-Mart business name/address result (not its Reviews shortcut), then run the audit again.");
+      return;
+    }
     restoreVerifiedListing(identity);
-    status("Dealership identity verified. Opening Google Reviews…");
+    status("Dealership identity verified on its place page. Opening its Reviews tab…");
     const alreadyHasCards = Boolean(document.querySelector("[data-review-id],.jftiEf"));
     if (!alreadyHasCards && !clickReviewsTab()) {
       status("Identity verified, but Google did not expose a Reviews tab to open. No collection started.");
