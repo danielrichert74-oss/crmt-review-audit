@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.0
+// @version      0.7.7
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -22,6 +22,8 @@
     if (savedConfig && Array.isArray(savedConfig.titleTokens) && savedConfig.address && savedConfig.phone) EXPECTED = savedConfig;
   } catch (_) {}
   const cards = new Map();
+  const nodeCaptureKeys = new WeakMap();
+  let fallbackCaptureSequence = 0;
   let storageKey = "crmt-review-capture-greenville-v1";
   let storageWarning = "";
   function persistCards() {
@@ -78,7 +80,7 @@
     "overflow:auto", "background:#101820", "color:#fff",
     "border:2px solid #6da9d2", "border-radius:12px",
     "padding:10px", "font:14px/1.35 system-ui,sans-serif",
-    "box-shadow:0 3px 18px #0008"
+    "box-shadow:0 3px 18px #0008", "pointer-events:auto", "touch-action:pan-y"
   ].join(";");
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
@@ -100,13 +102,14 @@
       <button data-action="raw">Export raw JSONL</button>
       <button data-action="one">Export one-star JSONL</button>
       <button data-action="csv">Export one-star CSV</button>
+      <button data-action="bundle">Export full evidence bundle</button>
       <button data-action="manifest">Export manifest</button>
     </div>
     <div style="margin-top:7px;font-size:11px;opacity:.8">
       User-controlled pilot. Use Lowest only when visibly selected; otherwise use Unsorted mode. Never claims complete history.
     </div>`;
   const styleButtons = () => panel.querySelectorAll("button").forEach(b => {
-    b.style.cssText = "min-height:38px;padding:6px;border:1px solid #9ab;border-radius:7px;background:#e8f0f6;color:#102030;font-weight:600";
+    b.style.cssText = "min-height:42px;padding:8px;border:1px solid #9ab;border-radius:7px;background:#e8f0f6;color:#102030;font-weight:600;pointer-events:auto;touch-action:manipulation;position:relative;z-index:1";
   });
   (document.body || document.documentElement).appendChild(panel);
   styleButtons();
@@ -215,13 +218,33 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "crmt-android-userscript-pilot",
+      collector: "review-audit-tool-android-0.7.7",
       card_text: cardText
     };
     const keyMaterial = [
-      row.reviewer_name, row.published_at, row.review_text, row.rating_label
+      row.reviewer_name, row.published_at, row.review_text, row.rating_label, row.rating_value
     ].join("|");
-    row.capture_key = row.review_id || hash(keyMaterial);
+    row.potential_duplicate_signature = hash(keyMaterial);
+    if (row.review_id) {
+      row.capture_key = "google-review-id:" + row.review_id;
+      row.deduplication_basis = "google-review-id";
+    } else {
+      // A DOM-node/signature key prevents repeated polling of the same rendered
+      // card from overwriting or duplicating it. Different DOM nodes with the
+      // same fingerprint are retained as separate observations and flagged.
+      let signatures = nodeCaptureKeys.get(el);
+      if (!signatures) {
+        signatures = new Map();
+        nodeCaptureKeys.set(el, signatures);
+      }
+      if (!signatures.has(row.potential_duplicate_signature)) {
+        fallbackCaptureSequence++;
+        signatures.set(row.potential_duplicate_signature,
+          "observed-card:" + row.potential_duplicate_signature + ":" + fallbackCaptureSequence);
+      }
+      row.capture_key = signatures.get(row.potential_duplicate_signature);
+      row.deduplication_basis = "dom-node-and-content-signature";
+    }
     return row;
   }
 
@@ -318,14 +341,54 @@
     };
   }
 
-  function clickReviewsTab() {
-    const candidates = [...document.querySelectorAll('button,[role="tab"],[role="button"],a')];
-    const target = candidates.find(node => {
-      const label = clean((node.getAttribute("aria-label") || "") + " " +
-        (node.innerText || node.textContent || ""));
-      return /\breviews\b/i.test(label) && !/write a review|review this place/i.test(label);
+  function isPlaceDetailPage() {
+    return /\/maps\/place\//i.test(location.pathname) ||
+      /!1s0x[0-9a-f]+:0x[0-9a-f]+/i.test(location.href);
+  }
+
+  let lastReviewsControlDiagnostic = "";\n\n  function clickReviewsTab() {
+    // Never activate review links from search results. On a verified place
+    // page, Maps may expose a tab, a rating/count button, or a same-place
+    // reviews link depending on viewport and experiment cohort.
+    if (!isPlaceDetailPage()) return false;
+    const candidates = [...document.querySelectorAll(
+      'button,[role="tab"],[role="button"],a[href],[tabindex="0"]'
+    )].filter(node => {
+      const rect = node.getBoundingClientRect();
+      const css = getComputedStyle(node);
+      return rect.width > 0 && rect.height > 0 &&
+        css.visibility !== "hidden" && css.display !== "none";
     });
-    if (!target) return false;
+    const labelOf = node => clean((node.getAttribute("aria-label") || "") + " " +
+      (node.innerText || node.textContent || ""));
+    const safeLabel = label => /\breviews?\b/i.test(label) &&
+      !/write a review|review this place|review your visit|review guidelines/i.test(label);
+    const exact = candidates.find(node => {
+      const label = labelOf(node);
+      return /^reviews?(?:\s+\(?\d[\d,]*\)?)?$/i.test(label) &&
+        node.matches('button,[role="tab"],[role="button"]');
+    });
+    const countButton = candidates.find(node => {
+      const label = labelOf(node);
+      return safeLabel(label) && /\d/.test(label) &&
+        node.matches('button,[role="tab"],[role="button"]');
+    });
+    const samePlaceLink = candidates.find(node => {
+      const label = labelOf(node);
+      const href = node.getAttribute("href") || "";
+      return safeLabel(label) && /\/maps\/place\//i.test(href) &&
+        /reviews/i.test(href);
+    });
+    const target = exact || countButton || samePlaceLink;
+    if (!target) {
+      const hints = candidates.map(labelOf).filter(label => /\breviews?\b/i.test(label)).slice(0, 8);
+      lastReviewsControlDiagnostic = "Visible review-related controls: " +
+        (hints.join(" | ") || "none") + ". Visible buttons: " +
+        candidates.filter(node => node.matches('button,[role="tab"],[role="button"]'))
+          .map(labelOf).filter(Boolean).slice(0, 12).join(" | ") +
+        ". Place-page URL: " + location.pathname;
+      return false;
+    }
     try { target.click(); return true; } catch (_) { return false; }
   }
 
@@ -341,23 +404,33 @@
         JSON.stringify(identity.diagnostic));
       return;
     }
+    if (!isPlaceDetailPage()) {
+      status("Business details match, but this is a Maps search/results page, not the dealership place page. Open the Car-Mart business name/address result (not its Reviews shortcut), then run the audit again.");
+      return;
+    }
     restoreVerifiedListing(identity);
-    status("Dealership identity verified. Opening Google Reviews…");
+    status("Dealership identity verified on its place page. Opening its Reviews tab…");
     const alreadyHasCards = Boolean(document.querySelector("[data-review-id],.jftiEf"));
     if (!alreadyHasCards && !clickReviewsTab()) {
-      status("Identity verified, but Google did not expose a Reviews tab to open. No collection started.");
+      // Preserve the actual diagnostic rather than replacing it with a generic
+      // failure message. This tells us what Google exposed on this device.
+      status("Identity verified; no collection started. " +
+        (lastReviewsControlDiagnostic || "No review control diagnostic was available."));
       return;
     }
     let foundCards = false;
-    for (let attempt = 0; attempt < 24; attempt++) {
+    for (let attempt = 0; attempt < 90; attempt++) {
       if (document.querySelector("[data-review-id],.jftiEf")) {
         foundCards = true;
         break;
       }
+      if (attempt === 11 || attempt === 29 || attempt === 59) {
+        status("Identity verified. Waiting for Google Reviews to finish loading… " + ((attempt + 1) / 2) + " seconds elapsed.");
+      }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     if (!foundCards) {
-      status("Identity verified, but no review cards appeared within 12 seconds. No collection started.");
+      status("Identity verified, but Google did not expose review cards after 45 seconds. No collection started. Open the Reviews tab manually; then use Arm (Unsorted visible reviews) when cards appear.");
       return;
     }
     armed = true;
@@ -478,7 +551,7 @@
     a.href = url;
     a.download = filename;
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
   function exportAuditBundle() {
@@ -495,7 +568,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.0",
+        collector: "review-audit-tool-android-0.7.7",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -524,8 +597,8 @@
     };
     download("crmt-audit-bundle-" + Date.now() + ".json", JSON.stringify(bundle, null, 2), "application/json");
     autoBundleExported = true;
-    status("AUTO-COLLECT finished. Evidence bundle downloaded: " + rows.length +
-      " total reviews, " + oneStar.length + " one-star. Completeness remains unverified.");
+    status("Evidence bundle export requested: " + rows.length +
+      " total reviews, " + oneStar.length + " one-star. Check Downloads; if absent, tap Export full evidence bundle. Completeness remains unverified.");
   }
 
   function exportRaw() {
@@ -551,7 +624,7 @@
     const fields = [
       "review_id", "capture_key", "reviewer_name", "reviewer_profile_url",
       "rating_label", "rating_value", "published_at", "review_text",
-      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text"
+      "owner_reply_text", "owner_reply_date", "listing_title", "listing_url", "collected_at_utc", "card_text", "potential_duplicate_signature", "deduplication_basis"
     ];
     const csv = [fields.join(","),
       ...rows.map(row => fields.map(f => csvCell(row[f])).join(","))
@@ -564,7 +637,10 @@
     if (!button) return;
     const action = button.dataset.action;
     if (action === "run") {
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (action === "hide") {
       panel.style.width = "42px";
       panel.style.height = "42px";
@@ -605,7 +681,7 @@
           listing_url_at_verification: location.href
         };
         status("Business identity verified on overview: " + identity.title +
-          ". Restored " + cards.size + " saved review(s). Now open Reviews and choose Lowest.");
+          ". Restored " + cards.size + " saved review(s). Tap RUN AUDIT (all reviews); no Lowest sort is required.");
       }
     } else if (action === "verify") {
       const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
@@ -655,6 +731,7 @@
     else if (action === "raw") { persistCards(); exportRaw(); }
     else if (action === "one") { persistCards(); exportOneStar(); }
     else if (action === "csv") { persistCards(); exportCsv(); }
+    else if (action === "bundle") { exportAuditBundle(); }
     else if (action === "manifest") {
       persistCards();
       const rows = [...cards.values()];
@@ -693,7 +770,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Pilot 0.6.0 loaded. Waiting for the verified Greenville business profile.");
+  status("Review Audit Tool 0.7.7 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
@@ -705,7 +782,10 @@
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
       status("Verified Greenville profile detected. Starting automatic audit…");
-      runUnsortedAudit();
+      runUnsortedAudit().catch(error => {
+        armed = false;
+        status("Audit startup failed safely: " + clean(error?.message || error));
+      });
     } else if (autoLaunchAttempts >= 45) {
       clearInterval(autoLaunchTimer);
       autoLaunchTimer = null;
