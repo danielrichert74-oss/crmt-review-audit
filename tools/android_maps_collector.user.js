@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Review Audit Tool — Google Maps Collector
 // @namespace    https://github.com/danielrichert74-oss/crmt-review-audit
-// @version      0.7.6
+// @version      0.7.7
 // @description  Review Audit Tool: persistent public Google Maps review capture with raw evidence and traversal diagnostics.
 // @match        https://www.google.com/maps/*
 // @match        https://maps.google.com/maps/*
@@ -218,7 +218,7 @@
       listing_title: verifiedIdentity?.title || clean(document.querySelector("h1")?.innerText),
       listing_url: verifiedIdentity?.listing_url_at_verification || location.href,
       collected_at_utc: new Date().toISOString(),
-      collector: "review-audit-tool-android-0.7.6",
+      collector: "review-audit-tool-android-0.7.7",
       card_text: cardText
     };
     const keyMaterial = [
@@ -568,7 +568,7 @@
         identity_checks: verifiedIdentity
       },
       collection: {
-        collector: "review-audit-tool-android-0.7.6",
+        collector: "review-audit-tool-android-0.7.7",
         mode: captureMode || "not-armed",
         sort_state: captureMode === "lowest" ? "lowest-confirmed" : "unverified-or-default-sort",
         sort_verification_method: sortVerificationMethod,
@@ -681,7 +681,7 @@
           listing_url_at_verification: location.href
         };
         status("Business identity verified on overview: " + identity.title +
-          ". Restored " + cards.size + " saved review(s). Now open Reviews and choose Lowest.");
+          ". Restored " + cards.size + " saved review(s). Tap RUN AUDIT (all reviews); no Lowest sort is required.");
       }
     } else if (action === "verify") {
       const hasReviewCards = document.querySelector("[data-review-id],.jftiEf");
@@ -770,7 +770,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
   restoreCards();
-  status("Review Audit Tool 0.7.6 loaded. Waiting for the verified dealership profile.");
+  status("Review Audit Tool 0.7.7 loaded. Waiting for the verified dealership profile.");
 
   // Start automatically only when the selected page title itself identifies
   // the expected dealership and the address + phone checks also pass.
